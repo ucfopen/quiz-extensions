@@ -1,5 +1,5 @@
 server_ip = "0.0.0.0"
-servername = 'http://' + server_ip + ':5000'
+servername = 'http://' + server_ip + ':8080'
 
 COURSE_TEMPLATE = '751378'
 

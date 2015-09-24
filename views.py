@@ -10,12 +10,24 @@ app = Flask(__name__)
 app.secret_key = '***REMOVED***'
 app.debug = True
 
-oauth_creds = { 'key': 'secret', 'eleven': '11'}
+oauth_creds = {'key': 'secret', 'eleven': '11'}
+
 
 @app.route("/", methods=['POST', 'GET'])
 def index():
 	msg = "This is the index."
 	return render_template('index.html', msg=msg)
+
+
+@app.route("/xml", methods=['POST', 'GET'])
+def xml():
+	return render_template('lti.xml')
+
+
+@app.route("/quiz", methods=['POST', 'GET'])
+def quiz():
+	return "test"
+
 
 @app.route('/launch', methods = ['POST'])
 def lti_tool():
@@ -28,14 +40,14 @@ def lti_tool():
 			tool_provider = ToolProvider(None, None, request.form)
 			tool_provider.lti_msg = 'Your consumer didn\'t use a recognized key'
 			tool_provider.lti_errorlog = 'You did it wrong!'
-			return render_template('error.html', 
+			return render_template('error.html',
 				message = 'Consumer key wasn\'t recognized',
 				params = request.form)
 	else:
 		return render_template('error.html', message = 'No consumer key')
 
 	if not tool_provider.is_valid_request(request):
-		return render_template('error.html', 
+		return render_template('error.html',
 			message = 'The OAuth signature was invalid',
 			params = request.form)
 
@@ -53,11 +65,12 @@ def lti_tool():
 	if tool_provider.is_outcome_service():
 		return render_template('assessment.html', username = username)
 	else:
-		return redirect(url_for('courses', **request.form))
+		return redirect(url_for('quiz', **request.form))
+
 
 def was_nonce_used_in_last_x_minutes(nonce, minutes):
-    return False
+	return False
 
 if __name__ == "__main__":
 	app.debug = True
-	app.run(host="host", port=8080)
+	app.run(host="0.0.0.0", port=8080)
