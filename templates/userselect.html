@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+
+	<h1>Quiz Moderation LTI</h1>
+	<p>Select students</p>
+
+	<div id="container">
+		<div id="lists">
+			<div id="users">
+				<form id="filter_form">
+					<input type="text" id="filter_users">
+					<button type="submit" id="filter_users_button" class="btn btn-info btn-lg">Filter</button>
+				</form>
+				<ul id="user_list">
+					{% include "user_list.html" %}
+				</ul>
+			</div>
+			<div id="selected_users">
+				<p>Selected</p>
+				<ul id="selected_user_list">
+				</ul>
+			</div>
+		</div>
+		<button type="button" class="btn btn-info btn-lg" data-toggle="modal" data-target="#confirm_modal">Confirm</button>
+	</div>
+
+	<div id="confirm_modal" class="modal fade" role="dialog">
+		<div class="modal-dialog">
+
+			<div class="modal-content">
+				<div class="modal-header"
+					<button type="button" class="close" data-dismiss="modal">&times;</button>
+					<h4 class="modal-title">Add Time</h4>
+				</div>
+				<div class="modal-body">
+					
+					<p>Choose a default percentage or supply a custom one.</p>
+					<select>
+						<option>100%</option>
+						<option>200%</option>
+						<option>400%</option>
+					</select>
+					<input type="number" min="100">%
+					<button type="submit">Submit</button>
+
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+
+{% endblock %}

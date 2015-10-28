@@ -3,6 +3,6 @@ servername = 'http://' + server_ip + ':8080'
 
 COURSE_TEMPLATE = '751378'
 
-ENDPOINT = servername + '/endpoint';
+ENDPOINT = servername + '/endpoint'
 API_URL = '***REMOVED***'
-API_KEY = ''
+API_KEY = '***REMOVED***'

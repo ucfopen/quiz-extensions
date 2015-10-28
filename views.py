@@ -2,6 +2,9 @@ from flask import Flask, render_template, session, request,\
 	make_response, redirect, url_for, Response, jsonify
 from config import *
 
+from operator import itemgetter
+import requests
+
 #OAuth specific
 from ims_lti_py import ToolProvider
 from time import time
@@ -12,6 +15,9 @@ app.debug = True
 
 oauth_creds = {'key': 'secret', 'eleven': '11'}
 
+course_id = "839732"  # TODO: get this dynamically
+headers = {'Authorization': 'Bearer ' + API_KEY}
+
 
 @app.route("/", methods=['POST', 'GET'])
 def index():
@@ -19,14 +25,38 @@ def index():
 	return render_template('index.html', msg=msg)
 
 
-@app.route("/xml", methods=['POST', 'GET'])
+@app.route("/xml/", methods=['POST', 'GET'])
 def xml():
 	return render_template('lti.xml')
 
 
-@app.route("/quiz", methods=['POST', 'GET'])
+@app.route("/quiz/", methods=['POST', 'GET'])
 def quiz():
-	return "test"
+	users = get_enrollment_users()
+	return render_template('userselect.html', users=users)
+
+
+@app.route("/filter/", methods=['POST', 'GET'])
+def filter():
+	query = request.args.get('query', None).lower()
+	users = get_enrollment_users()
+
+	users = [user for user in users if query in user['sortable_name'].lower()]
+
+	return render_template('user_list.html', users=users)
+
+
+def get_quizzes():
+	return requests.get("%s/courses/%s/quizzes" % (API_URL, course_id), headers=headers).json()
+
+
+def get_enrollment_users():
+	try:
+		enrollments = requests.get("%s/courses/%s/enrollments" % (API_URL, course_id), headers=headers).json()
+	except:
+		return []
+	enrollment_list = [enrollment.get('user') for enrollment in enrollments]
+	return sorted(enrollment_list, key=itemgetter('sortable_name'))
 
 
 @app.route('/launch', methods = ['POST'])
