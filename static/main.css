@@ -185,6 +185,7 @@ footer {
 
 #user_list, #selected_user_list {
     margin: 0px;
+    display: block;
 }
 
 #user_list li.user, #selected_user_list li.user {
@@ -194,19 +195,11 @@ footer {
     border-radius: 10px;
 }
 
-#user_list li.user:hover {
-    background-color: green;
-    color: white;
-    cursor: pointer;
-}
-
-#selected_user_list li.user:hover {
-    background-color: red;
-    color: white;
-    cursor: pointer;
-}
-
 #container {
     border: 1px solid black;
     width: 100%;
+}
+
+#modal_percent_added {
+    font-weight: bold;
 }

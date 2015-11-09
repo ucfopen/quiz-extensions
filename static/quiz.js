@@ -3,6 +3,12 @@ var filter_form = document.getElementById("filter_form");
 var filter_text = document.getElementById("filter_users");
 var selected_user_list = document.getElementById("selected_user_list");
 var user_list = document.getElementById("user_list");
+var percent_added_span = document.getElementById("modal_percent_added");
+var modal_selected_user_list = document.getElementById("modal_selected_user_list");
+var percent_select = document.getElementById("percent_select");
+var percent_input = document.getElementById("percent_input");
+var confirm_button = document.getElementById("confirm_button");
+var submit_button = document.getElementById("submit_button");
 
 user_list.addEventListener('click', function(e) {
 	if (e.target.tagName.toLowerCase() == "li" && e.target.classList.contains("user")) {
@@ -26,6 +32,30 @@ filter_button.addEventListener('click', function(e) {
 	ajaxFilter(query, removeAlreadySelected);
 });
 
+percent_select.addEventListener('change', function(e) {
+	percent_added_span.innerHTML = getPercent();
+});
+
+percent_input.addEventListener('keyup', function(e) {
+	percent_added_span.innerHTML = getPercent();
+});
+
+confirm_button.addEventListener('click', function(e) {
+	percent_added_span.innerHTML = getPercent();
+
+	modal_selected_user_list.innerHTML = "";
+	for (var i=0; i<selected_user_list.children.length; i++) {
+		modal_selected_user_list.appendChild(selected_user_list.children[i].cloneNode(true));
+	}
+
+});
+
+submit_button.addEventListener('click', function(e) {
+	for (var i=0; i<modal_selected_user_list.children.length; i++) {
+		modal_selected_user_list.children[i].getAttribute("data-user-id")
+	}
+})
+
 function ajaxFilter(query, callback) {
 	var xhttp = new XMLHttpRequest();
 
@@ -38,6 +68,28 @@ function ajaxFilter(query, callback) {
 	xhttp.open("GET", "/filter/?query=" + query, true);
 	xhttp.send();
 }
+
+function getPercent() {
+	if (percent_input.value != null && percent_input.value >= 100) {
+		return percent_input.value+"%";
+	}
+	else {
+		return percent_select.value;
+	}
+}
+
+// function ajaxSend(query, callback) {
+// 	var xhttp = new XMLHttpRequest();
+
+// 	xhttp.onreadystatechange = function() {
+// 		if (xhttp.readyState == 4 && xhttp.status == 200) {
+// 			// do things
+// 		}
+// 	}
+// 	xhttp.onload = callback;
+// 	xhttp.open("POST", "/", true)
+// 	xhttp.send(/*put post data here*/)
+// }
 
 function removeAlreadySelected() {
 	// Removes users who are already selected from search results.

@@ -21,7 +21,7 @@
 				</ul>
 			</div>
 		</div>
-		<button type="button" class="btn btn-info btn-lg" data-toggle="modal" data-target="#confirm_modal">Confirm</button>
+		<button id="confirm_button" type="button" class="btn btn-info btn-lg" data-toggle="modal" data-target="#confirm_modal">Confirm</button>
 	</div>
 
 	<div id="confirm_modal" class="modal fade" role="dialog">
@@ -33,15 +33,19 @@
 					<h4 class="modal-title">Add Time</h4>
 				</div>
 				<div class="modal-body">
-					
+
 					<p>Choose a default percentage or supply a custom one.</p>
-					<select>
+					<select id="percent_select">
 						<option>100%</option>
-						<option>200%</option>
+						<option selected>200%</option>
 						<option>400%</option>
 					</select>
-					<input type="number" min="100">%
-					<button type="submit">Submit</button>
+					<input id="percent_input" type="number" min="100">%
+
+					<button id="submit_button" type="button" class="btn btn-success" >Submit</button>
+
+					<p>The following students will have <span id="modal_percent_added"></span> of normal time on all quizzes.</p>
+					<ul id="modal_selected_user_list"></ul>
 
 				</div>
 				<div class="modal-footer">
