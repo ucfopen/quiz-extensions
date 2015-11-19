@@ -4,6 +4,7 @@ from config import *
 
 from operator import itemgetter
 import requests
+import json
 
 #OAuth specific
 from ims_lti_py import ToolProvider
@@ -17,6 +18,9 @@ oauth_creds = {'key': 'secret', 'eleven': '11'}
 
 course_id = "839732"  # TODO: get this dynamically
 headers = {'Authorization': 'Bearer ' + API_KEY}
+json_headers = {'Authorization': 'Bearer ' + API_KEY, 'Content-type': 'application/json'}
+
+COURSE_URL = "%scourses/%s" % (API_URL, course_id)
 
 
 @app.route("/", methods=['POST', 'GET'])
@@ -36,6 +40,53 @@ def quiz():
 	return render_template('userselect.html', users=users)
 
 
+@app.route("/update/", methods=['POST'])
+def update():
+	post_json = request.get_json()
+
+	if not post_json:
+		return "invalid request"
+
+	user_ids = post_json.get('user_ids', [])
+	percent = post_json.get('percent', None)
+
+	quizzes = get_quizzes()
+
+	for quiz in quizzes:
+		quiz_id = quiz.get('id', None)
+
+		time_limit = quiz.get('time_limit', None)
+
+		if time_limit is None or time_limit == 0:
+			# Quiz has no time limit so there is no time to add.
+			continue
+
+		added_time = time_limit * ((int(percent)-100) / 100) if percent else 0
+
+		quiz_extensions = {
+			'quiz_extensions': []
+		}
+
+		for user_id in user_ids:
+			user_extension = {
+				'user_id': user_id,
+				'extra_time': added_time
+			}
+			quiz_extensions['quiz_extensions'].append(user_extension)
+
+		response = requests.post(
+			"%s/quizzes/%s/extensions" % (COURSE_URL, quiz_id),
+			data=json.dumps(quiz_extensions),
+			headers=json_headers
+		)
+
+		if response.status_code != 200:
+			import ipdb; ipdb.set_trace()
+			return "welp"
+
+	return "success!"
+
+
 @app.route("/filter/", methods=['POST', 'GET'])
 def filter():
 	query = request.args.get('query', None).lower()
@@ -47,12 +98,14 @@ def filter():
 
 
 def get_quizzes():
-	return requests.get("%s/courses/%s/quizzes" % (API_URL, course_id), headers=headers).json()
+	quizzes = requests.get("%s/quizzes" % (COURSE_URL), headers=headers).json()
+
+	return quizzes
 
 
 def get_enrollment_users():
 	try:
-		enrollments = requests.get("%s/courses/%s/enrollments" % (API_URL, course_id), headers=headers).json()
+		enrollments = requests.get("%s/enrollments" % (COURSE_URL), data={'type': 'StudentEnrollment'}, headers=headers).json()
 	except:
 		return []
 	enrollment_list = [enrollment.get('user') for enrollment in enrollments]

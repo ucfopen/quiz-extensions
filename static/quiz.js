@@ -51,9 +51,12 @@ confirm_button.addEventListener('click', function(e) {
 });
 
 submit_button.addEventListener('click', function(e) {
-	for (var i=0; i<modal_selected_user_list.children.length; i++) {
-		modal_selected_user_list.children[i].getAttribute("data-user-id")
-	}
+	// for (var i=0; i<modal_selected_user_list.children.length; i++) {
+	// 	modal_selected_user_list.children[i].getAttribute("data-user-id")
+	// }
+	ajaxSend(function(){
+		console.log("done!");
+	})
 })
 
 function ajaxFilter(query, callback) {
@@ -71,25 +74,39 @@ function ajaxFilter(query, callback) {
 
 function getPercent() {
 	if (percent_input.value != null && percent_input.value >= 100) {
-		return percent_input.value+"%";
+		return percent_input.value;
 	}
 	else {
-		return percent_select.value;
+		return percent_select.value.replace(/%/g, '');
 	}
 }
 
-// function ajaxSend(query, callback) {
-// 	var xhttp = new XMLHttpRequest();
+function ajaxSend(query, callback) {
+	var xhttp = new XMLHttpRequest();
 
-// 	xhttp.onreadystatechange = function() {
-// 		if (xhttp.readyState == 4 && xhttp.status == 200) {
-// 			// do things
-// 		}
-// 	}
-// 	xhttp.onload = callback;
-// 	xhttp.open("POST", "/", true)
-// 	xhttp.send(/*put post data here*/)
-// }
+	var selected_users = selected_user_list.children;
+
+	var users_percent_obj = {
+		user_ids: [],
+		percent: getPercent()
+	};
+
+	for (var i=0; i<selected_users.length; i++) {
+		var user_id = selected_users[i].getAttribute("data-user-id");
+		users_percent_obj.user_ids.push(user_id);
+	}
+
+	xhttp.onreadystatechange = function() {
+		if (xhttp.readyState == 4 && xhttp.status == 200) {
+			// Server responded with 200. Check xhttp.responseText. Do things.
+		}
+	}
+	console.log(JSON.stringify(users_percent_obj));
+	xhttp.onload = callback;
+	xhttp.open("POST", "/update/", true);
+	xhttp.setRequestHeader("Content-Type", "application/json");
+	xhttp.send(JSON.stringify(users_percent_obj));
+}
 
 function removeAlreadySelected() {
 	// Removes users who are already selected from search results.
