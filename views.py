@@ -61,7 +61,7 @@ def update():
 			# Quiz has no time limit so there is no time to add.
 			continue
 
-		added_time = time_limit * ((int(percent)-100) / 100) if percent else 0
+		added_time = math.ceil(time_limit * ((float(percent)-100) / 100) if percent else 0)
 
 		quiz_extensions = {
 			'quiz_extensions': []
