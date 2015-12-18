@@ -5,6 +5,8 @@ from config import *
 from operator import itemgetter
 import requests
 import json
+import math
+from urlparse import parse_qs, urlsplit
 
 #OAuth specific
 from ims_lti_py import ToolProvider
@@ -16,11 +18,11 @@ app.debug = True
 
 oauth_creds = {'key': 'secret', 'eleven': '11'}
 
-course_id = "839732"  # TODO: get this dynamically
 headers = {'Authorization': 'Bearer ' + API_KEY}
 json_headers = {'Authorization': 'Bearer ' + API_KEY, 'Content-type': 'application/json'}
 
-COURSE_URL = "%scourses/%s" % (API_URL, course_id)
+course_url = ""  # this is probably a very bad idea to keep as a global.
+DEFAULT_PER_PAGE = 10
 
 
 @app.route("/", methods=['POST', 'GET'])
@@ -36,8 +38,17 @@ def xml():
 
 @app.route("/quiz/", methods=['POST', 'GET'])
 def quiz():
-	users = get_enrollment_users()
-	return render_template('userselect.html', users=users)
+	enrollments, max_pages = get_enrollments(
+		per_page=DEFAULT_PER_PAGE,
+		get_all_pages=False
+	)
+	user_list = [enrollment.get('user') for enrollment in enrollments]
+	return render_template(
+		'userselect.html',
+		users=user_list,
+		current_page_number=1,
+		max_pages=max_pages
+	)
 
 
 @app.route("/update/", methods=['POST'])
@@ -75,7 +86,7 @@ def update():
 			quiz_extensions['quiz_extensions'].append(user_extension)
 
 		response = requests.post(
-			"%s/quizzes/%s/extensions" % (COURSE_URL, quiz_id),
+			"%s/quizzes/%s/extensions" % (course_url, quiz_id),
 			data=json.dumps(quiz_extensions),
 			headers=json_headers
 		)
@@ -89,31 +100,105 @@ def update():
 
 @app.route("/filter/", methods=['POST', 'GET'])
 def filter():
-	query = request.args.get('query', None).lower()
-	users = get_enrollment_users()
+	query = request.args.get('query', '').lower()
+	page = int(request.args.get('page', 1))
+	per_page = int(request.args.get('per_page', DEFAULT_PER_PAGE))
 
-	users = [user for user in users if query in user['sortable_name'].lower()]
+	enrollments, max_pages = get_enrollments()
+	user_list = [enrollment.get('user') for enrollment in enrollments]
 
-	return render_template('user_list.html', users=users)
+	# if invalid page, default to page 1
+	if page < 1 or page > max_pages:
+		page = 1
+
+	start_index = (page-1)*per_page
+	end_index = page*per_page
+
+	users = [user for user in user_list if query in user['sortable_name'].lower()]
+	users_paginated = users[start_index:end_index]
+
+	return render_template(
+		'user_list.html',
+		users=users_paginated,
+		current_page_number=page,
+		max_pages=max_pages
+	)
 
 
-def get_quizzes():
-	quizzes = requests.get("%s/quizzes" % (COURSE_URL), headers=headers).json()
+def get_quizzes(per_page=100):
+	quizzes = []
+	quizzes_url = "%s/quizzes?per_page=%d" % (course_url, per_page)
+
+	while True:
+		quizzes_response = requests.get(quizzes_url, headers=headers)
+
+		quizzes_list = quizzes_response.json()
+
+		if 'errors' in quizzes_list:
+			break
+
+		if isinstance(quizzes_list, list):
+			quizzes.extend(quizzes_list)
+		else:
+			quizzes = quizzes_list
+
+		try:
+			quizzes_url = quizzes_response.links['next']['url']
+		except KeyError:
+			break
 
 	return quizzes
 
 
-def get_enrollment_users():
-	try:
-		enrollments = requests.get("%s/enrollments" % (COURSE_URL), data={'type': 'StudentEnrollment'}, headers=headers).json()
-	except:
-		return []
-	enrollment_list = [enrollment.get('user') for enrollment in enrollments]
-	return sorted(enrollment_list, key=itemgetter('sortable_name'))
+def get_enrollments(per_page=DEFAULT_PER_PAGE, get_all_pages=True):
+	enrollments = []
+	enrollment_url = "%s/enrollments?page=1&per_page=%s" % (
+		course_url,
+		per_page
+	)
+
+	while True:
+		enrollments_response = requests.get(
+			enrollment_url,
+			data={'type': 'StudentEnrollment'},
+			headers=headers
+		)
+		enrollments_list = enrollments_response.json()
+
+		if 'errors' in enrollments_list:
+			break
+
+		if isinstance(enrollments_list, list):
+			enrollments.extend(enrollments_list)
+		else:
+			enrollments = enrollments_list
+
+		num_pages = int(
+			parse_qs(
+				urlsplit(
+					enrollments_response.links['last']['url']
+				).query
+			)['page'][0]
+		)
+
+		try:
+			enrollment_url = enrollments_response.links['next']['url']
+		except KeyError:
+			break
+
+		if not get_all_pages:
+			break
+
+	return enrollments, num_pages
 
 
 @app.route('/launch', methods = ['POST'])
 def lti_tool():
+	global course_url
+
+	course_id = request.form.get('custom_canvas_course_id')
+	course_url = "%scourses/%s" % (API_URL, course_id)
+
 	key = request.form.get('oauth_consumer_key')
 	if key:
 		secret = oauth_creds.get(key)

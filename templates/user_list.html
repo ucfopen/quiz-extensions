@@ -1,3 +1,23 @@
+<script type="text/javacsript">curr_page_number = {{current_page_number}};</script>
+
+<div id="user_list" class="btn-group-vertical">
 {% for user in users %}
-	<li class="user" data-user-id="{{ user.id }}">{{ user.sortable_name }}</li>
+	<button class="user btn btn-default" data-user-id="{{ user.id }}">{{ user.sortable_name }}</button>
 {% endfor %}
+</div>
+
+<div class="text-center">
+{% if current_page_number > 1 %}
+	<button id="prev_user_page_button" class="btn btn-default" data-page-number="{{ current_page_number|int - 1 }}"><span class="glyphicon glyphicon-chevron-left"></span>Prev</button>
+{% else %}
+	<button id="prev_user_page_button" class="btn btn-default" data-page-number="1" disabled><span class="glyphicon glyphicon-chevron-left"></span>Prev</button>
+{% endif %}
+
+<span style="margin-left: 15px; margin-right: 15px;">Page {{ current_page_number }} of {{ max_pages }}</span>
+
+{% if current_page_number < max_pages %}
+	<button id="next_user_page_button" class="btn btn-default" data-page-number="{{ current_page_number|int + 1 }}">Next<span class="glyphicon glyphicon-chevron-right"></span></button>
+{% else %}
+	<button id="next_user_page_button" class="btn btn-default" data-page-number="{{ max_pages }}" disabled>Next<span class="glyphicon glyphicon-chevron-right"></span></button>
+{% endif %}
+</div>
