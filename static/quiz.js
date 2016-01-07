@@ -122,7 +122,7 @@ function ajaxFilter(query, page, callback) {
 		}
 	}
 	xhttp.onload = callback;
-	xhttp.open("GET", "/filter/?query=" + query + "&page=" + page, true);
+	xhttp.open("GET", "/filter/"+course_id+"/?query=" + query + "&page=" + page, true);
 	xhttp.send();
 }
 
@@ -158,7 +158,7 @@ function ajaxSend(callback) {
 	}
 	console.log(JSON.stringify(users_percent_obj));
 	xhttp.onload = callback;
-	xhttp.open("POST", "/update/", true);
+	xhttp.open("POST", "/update/"+course_id+"/", true);
 	xhttp.setRequestHeader("Content-Type", "application/json");
 	xhttp.send(JSON.stringify(users_percent_obj));
 }

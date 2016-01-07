@@ -2,7 +2,6 @@ from flask import Flask, render_template, session, request,\
 	make_response, redirect, url_for, Response, jsonify
 from config import *
 
-from operator import itemgetter
 import requests
 import json
 import math
@@ -21,8 +20,7 @@ oauth_creds = {'key': 'secret', 'eleven': '11'}
 headers = {'Authorization': 'Bearer ' + API_KEY}
 json_headers = {'Authorization': 'Bearer ' + API_KEY, 'Content-type': 'application/json'}
 
-course_url = ""  # this is probably a very bad idea to keep as a global.
-DEFAULT_PER_PAGE = 10
+DEFAULT_PER_PAGE = 100
 
 
 @app.route("/", methods=['POST', 'GET'])
@@ -36,23 +34,35 @@ def xml():
 	return render_template('lti.xml')
 
 
-@app.route("/quiz/", methods=['POST', 'GET'])
-def quiz():
+@app.route("/quiz/<course_id>", methods=['POST', 'GET'])
+def quiz(course_id=None):
+	if not course_id:
+		return "course_id required"
+
+	course_url = "%scourses/%s" % (API_URL, course_id)
+
 	enrollments, max_pages = get_enrollments(
-		per_page=DEFAULT_PER_PAGE,
+		course_url,
+		per_page=10,
 		get_all_pages=False
 	)
 	user_list = [enrollment.get('user') for enrollment in enrollments]
 	return render_template(
 		'userselect.html',
 		users=user_list,
+		course_id=course_id,
 		current_page_number=1,
 		max_pages=max_pages
 	)
 
 
-@app.route("/update/", methods=['POST'])
-def update():
+@app.route("/update/<course_id>/", methods=['POST'])
+def update(course_id=None):
+	if not course_id:
+		return "course_id required"
+
+	course_url = "%scourses/%s" % (API_URL, course_id)
+
 	post_json = request.get_json()
 
 	if not post_json:
@@ -61,7 +71,7 @@ def update():
 	user_ids = post_json.get('user_ids', [])
 	percent = post_json.get('percent', None)
 
-	quizzes = get_quizzes()
+	quizzes = get_quizzes(course_url)
 
 	for quiz in quizzes:
 		quiz_id = quiz.get('id', None)
@@ -98,13 +108,18 @@ def update():
 	return "success!"
 
 
-@app.route("/filter/", methods=['POST', 'GET'])
-def filter():
+@app.route("/filter/<course_id>/", methods=['POST', 'GET'])
+def filter(course_id=None):
+	if not course_id:
+		return "course_id required"
+
+	course_url = "%scourses/%s" % (API_URL, course_id)
+
 	query = request.args.get('query', '').lower()
 	page = int(request.args.get('page', 1))
 	per_page = int(request.args.get('per_page', DEFAULT_PER_PAGE))
 
-	enrollments, max_pages = get_enrollments()
+	enrollments, max_pages = get_enrollments(course_url)
 	user_list = [enrollment.get('user') for enrollment in enrollments]
 
 	# if invalid page, default to page 1
@@ -125,7 +140,7 @@ def filter():
 	)
 
 
-def get_quizzes(per_page=100):
+def get_quizzes(course_url, per_page=100):
 	quizzes = []
 	quizzes_url = "%s/quizzes?per_page=%d" % (course_url, per_page)
 
@@ -150,7 +165,8 @@ def get_quizzes(per_page=100):
 	return quizzes
 
 
-def get_enrollments(per_page=DEFAULT_PER_PAGE, get_all_pages=True):
+def get_enrollments(course_url, per_page=DEFAULT_PER_PAGE, get_all_pages=True):
+	num_pages = 0
 	enrollments = []
 	enrollment_url = "%s/enrollments?page=1&per_page=%s" % (
 		course_url,
@@ -194,10 +210,7 @@ def get_enrollments(per_page=DEFAULT_PER_PAGE, get_all_pages=True):
 
 @app.route('/launch', methods = ['POST'])
 def lti_tool():
-	global course_url
-
 	course_id = request.form.get('custom_canvas_course_id')
-	course_url = "%scourses/%s" % (API_URL, course_id)
 
 	key = request.form.get('oauth_consumer_key')
 	if key:
@@ -233,7 +246,7 @@ def lti_tool():
 	if tool_provider.is_outcome_service():
 		return render_template('assessment.html', username = username)
 	else:
-		return redirect(url_for('quiz', **request.form))
+		return redirect(url_for('quiz', course_id=course_id, **request.form))
 
 
 def was_nonce_used_in_last_x_minutes(nonce, minutes):
