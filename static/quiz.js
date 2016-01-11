@@ -9,6 +9,7 @@ var modal_selected_user_list = document.getElementById("modal_selected_user_list
 var percent_select = document.getElementById("percent_select");
 var percent_input = document.getElementById("percent_input");
 var go_button = document.getElementById("go_button");
+var clear_button = document.getElementById("clear_button");
 var submit_button = document.getElementById("submit_button");
 var prev_user_page_button = document.getElementById("prev_user_page_button");
 var next_user_page_button = document.getElementById("next_user_page_button");
@@ -104,6 +105,14 @@ go_button.addEventListener('click', function(e) {
 	}
 
 });
+
+clear_button.addEventListener('click', function(e) {
+	var num_selected_users = selected_user_list.children.length;
+
+	for (var i=0; i<num_selected_users; i++) {
+		selected_user_list.children[0].click();
+	}
+})
 
 submit_button.addEventListener('click', function(e) {
 	ajaxSend(function(){

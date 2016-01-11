@@ -43,7 +43,7 @@ def quiz(course_id=None):
 
 	enrollments, max_pages = get_enrollments(
 		course_url,
-		per_page=10,
+		per_page=25,
 		get_all_pages=False
 	)
 	user_list = [enrollment.get('user') for enrollment in enrollments]
