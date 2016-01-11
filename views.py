@@ -103,9 +103,9 @@ def update(course_id=None):
 
 		if response.status_code != 200:
 			import ipdb; ipdb.set_trace()
-			return "welp"
+			return "Something went wrong. Status code %s" % (response.status_code)
 
-	return "success!"
+	return "Success! %s quiz(zes) updated for %s student(s) to have %s%% time." % (len(quizzes), len(user_ids), percent)
 
 
 @app.route("/filter/<course_id>/", methods=['POST', 'GET'])

@@ -6,6 +6,7 @@ var user_list = document.getElementById("user_list");
 var user_list_div = document.getElementById("user_list_div");
 var percent_added_span = document.getElementById("modal_percent_added");
 var modal_selected_user_list = document.getElementById("modal_selected_user_list");
+var percent_form = document.getElementById("percent_form");
 var percent_select = document.getElementById("percent_select");
 var percent_input = document.getElementById("percent_input");
 var go_button = document.getElementById("go_button");
@@ -13,6 +14,8 @@ var clear_button = document.getElementById("clear_button");
 var submit_button = document.getElementById("submit_button");
 var prev_user_page_button = document.getElementById("prev_user_page_button");
 var next_user_page_button = document.getElementById("next_user_page_button");
+var update_status = document.getElementById("update_status");
+var close_button = document.getElementById("close_button");
 
 user_list_div.addEventListener('click', function(e) {
 	e.preventDefault();
@@ -120,6 +123,11 @@ submit_button.addEventListener('click', function(e) {
 	})
 })
 
+close_button.addEventListener('click', function(e) {
+	percent_form.style.display = "";
+	update_status.style.display = "none";
+})
+
 function ajaxFilter(query, page, callback) {
 	var xhttp = new XMLHttpRequest();
 
@@ -160,9 +168,21 @@ function ajaxSend(callback) {
 	}
 
 	xhttp.onreadystatechange = function() {
-		if (xhttp.readyState == 4 && xhttp.status == 200) {
-			// Server responded with 200. Check xhttp.responseText. Do things.
+		if (xhttp.readyState == 1) {
+			submit_button.disabled = true;
+			close_button.disabled = true;
 
+			update_status.innerHTML = "<p>Processing...</p>"
+
+			percent_form.style.display = "none";
+			update_status.style.display = "";
+			return
+		}
+
+		if (xhttp.readyState == 4 && xhttp.status == 200) {
+			update_status.innerHTML = "<p>"+ xhttp.responseText + "</p>";
+			close_button.disabled = false;
+			return
 		}
 	}
 	console.log(JSON.stringify(users_percent_obj));
