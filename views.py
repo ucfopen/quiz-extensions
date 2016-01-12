@@ -1,5 +1,5 @@
 from flask import Flask, render_template, session, request,\
-	make_response, redirect, url_for, Response, jsonify
+	redirect, url_for
 from config import *
 
 import requests
@@ -103,7 +103,6 @@ def update(course_id=None):
 		)
 
 		if response.status_code != 200:
-			import ipdb; ipdb.set_trace()
 			return "Something went wrong. Status code %s" % (response.status_code)
 
 	quiz_string = "quizzes have" if quiz > 1 else "quiz has"

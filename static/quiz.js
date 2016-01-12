@@ -1,5 +1,4 @@
 var filter_button = document.getElementById("filter_users_button");
-var filter_form = document.getElementById("filter_form");
 var filter_text = document.getElementById("filter_users");
 var selected_user_list = document.getElementById("selected_user_list");
 var user_list = document.getElementById("user_list");
@@ -12,8 +11,6 @@ var percent_input = document.getElementById("percent_input");
 var go_button = document.getElementById("go_button");
 var clear_button = document.getElementById("clear_button");
 var submit_button = document.getElementById("submit_button");
-var prev_user_page_button = document.getElementById("prev_user_page_button");
-var next_user_page_button = document.getElementById("next_user_page_button");
 var update_status = document.getElementById("update_status");
 var close_button = document.getElementById("close_button");
 
@@ -118,9 +115,7 @@ clear_button.addEventListener('click', function(e) {
 })
 
 submit_button.addEventListener('click', function(e) {
-	ajaxSend(function(){
-		console.log("done!");
-	})
+	ajaxSend();
 })
 
 close_button.addEventListener('click', function(e) {
@@ -152,7 +147,7 @@ function getPercent() {
 	}
 }
 
-function ajaxSend(callback) {
+function ajaxSend() {
 	var xhttp = new XMLHttpRequest();
 
 	var selected_users = selected_user_list.children;
@@ -185,8 +180,6 @@ function ajaxSend(callback) {
 			return
 		}
 	}
-	console.log(JSON.stringify(users_percent_obj));
-	xhttp.onload = callback;
 	xhttp.open("POST", "/update/"+course_id+"/", true);
 	xhttp.setRequestHeader("Content-Type", "application/json");
 	xhttp.send(JSON.stringify(users_percent_obj));
