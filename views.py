@@ -20,7 +20,8 @@ oauth_creds = {'key': 'secret', 'eleven': '11'}
 headers = {'Authorization': 'Bearer ' + API_KEY}
 json_headers = {'Authorization': 'Bearer ' + API_KEY, 'Content-type': 'application/json'}
 
-DEFAULT_PER_PAGE = 100
+DEFAULT_PER_PAGE = 10
+MAX_PER_PAGE = 100
 
 
 @app.route("/", methods=['POST', 'GET'])
@@ -41,12 +42,12 @@ def quiz(course_id=None):
 
 	course_url = "%scourses/%s" % (API_URL, course_id)
 
-	enrollments, max_pages = get_enrollments(
+	user_list, max_pages = search_users(
 		course_url,
-		per_page=25,
-		get_all_pages=False
+		per_page=DEFAULT_PER_PAGE,
+		page=1
 	)
-	user_list = [enrollment.get('user') for enrollment in enrollments]
+
 	return render_template(
 		'userselect.html',
 		users=user_list,
@@ -120,28 +121,22 @@ def filter(course_id=None):
 	page = int(request.args.get('page', 1))
 	per_page = int(request.args.get('per_page', DEFAULT_PER_PAGE))
 
-	enrollments, max_pages = get_enrollments(course_url)
-	user_list = [enrollment.get('user') for enrollment in enrollments]
-
-	# if invalid page, default to page 1
-	if page < 1 or page > max_pages:
-		page = 1
-
-	start_index = (page-1)*per_page
-	end_index = page*per_page
-
-	users = [user for user in user_list if query in user['sortable_name'].lower()]
-	users_paginated = users[start_index:end_index]
+	user_list, max_pages = search_users(
+		course_url,
+		per_page=per_page,
+		page=page,
+		search_term=query
+	)
 
 	return render_template(
 		'user_list.html',
-		users=users_paginated,
+		users=user_list,
 		current_page_number=page,
 		max_pages=max_pages
 	)
 
 
-def get_quizzes(course_url, per_page=100):
+def get_quizzes(course_url, per_page=MAX_PER_PAGE):
 	quizzes = []
 	quizzes_url = "%s/quizzes?per_page=%d" % (course_url, per_page)
 
@@ -166,47 +161,32 @@ def get_quizzes(course_url, per_page=100):
 	return quizzes
 
 
-def get_enrollments(course_url, per_page=DEFAULT_PER_PAGE, get_all_pages=True):
-	num_pages = 0
-	enrollments = []
-	enrollment_url = "%s/enrollments?page=1&per_page=%s" % (
+def search_users(course_url, per_page=DEFAULT_PER_PAGE, page=1, search_term=""):
+	users_url = "%s/search_users?per_page=%s&page=%s" % (
 		course_url,
-		per_page
+		per_page,
+		page
 	)
 
-	while True:
-		enrollments_response = requests.get(
-			enrollment_url,
-			data={'type': 'StudentEnrollment'},
-			headers=headers
-		)
-		enrollments_list = enrollments_response.json()
+	users_response = requests.get(
+		users_url,
+		data={'search_term': search_term},
+		headers=headers
+	)
+	user_list = users_response.json()
 
-		if 'errors' in enrollments_list:
-			break
+	if 'errors' in user_list:
+		return "Error getting user list."
 
-		if isinstance(enrollments_list, list):
-			enrollments.extend(enrollments_list)
-		else:
-			enrollments = enrollments_list
+	num_pages = int(
+		parse_qs(
+			urlsplit(
+				users_response.links['last']['url']
+			).query
+		)['page'][0]
+	)
 
-		num_pages = int(
-			parse_qs(
-				urlsplit(
-					enrollments_response.links['last']['url']
-				).query
-			)['page'][0]
-		)
-
-		try:
-			enrollment_url = enrollments_response.links['next']['url']
-		except KeyError:
-			break
-
-		if not get_all_pages:
-			break
-
-	return enrollments, num_pages
+	return user_list, num_pages
 
 
 @app.route('/launch', methods = ['POST'])
