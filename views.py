@@ -221,7 +221,7 @@ def lti_tool():
 	canvas_user_id = request.form.get('custom_canvas_user_id')
 
 	roles = request.form['ext_roles']
-	if not "Administrator" in roles or not "Instructor" in roles:
+	if not "Administrator" in roles and not "Instructor" in roles:
 		return render_template('error.html',
 			message='Must be an Administrator or Instructor',
 			params=request.form
