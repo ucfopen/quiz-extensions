@@ -28,11 +28,40 @@ MAX_PER_PAGE = 100
 def check_valid_user(f):
 	@wraps(f)
 	def decorated_function(*args, **kwargs):
-		if not session.get('lti_logged_in') or not session.get('canvas_user_id'):
+		canvas_user_id = session.get('canvas_user_id')
+		if not session.get('lti_logged_in') or not canvas_user_id:
 			return render_template(
 				'error.html',
 				message='Not allowed!'
 			)
+		if not 'course_id' in kwargs.keys():
+			return render_template(
+				'error.html',
+				message='No course_id provided.'
+			)
+		course_id = int(kwargs.get('course_id', 0))
+		user_enrollments_url = "%susers/%s/enrollments" % (API_URL, canvas_user_id)
+
+		payload = {
+			'user_id': canvas_user_id,
+			'type': ['TeacherEnrollment', 'TaEnrollment', 'DesignerEnrollment']
+		}
+
+		user_enrollments_response = requests.get(
+			user_enrollments_url,
+			data=json.dumps(payload),
+			headers=json_headers
+		)
+		user_enrollments = user_enrollments_response.json()
+
+		enrollment_list = [enrollment.get('course_id') for enrollment in user_enrollments]
+
+		if not int(course_id) in enrollment_list:
+			return render_template(
+				'error.html',
+				message='You are not enrolled in this course as a Teacher, TA, or Designer.'
+			)
+
 		return f(*args, **kwargs)
 	return decorated_function
 
