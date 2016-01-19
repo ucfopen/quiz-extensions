@@ -61,7 +61,7 @@ def quiz(course_id=None):
 		page=1
 	)
 
-	if not user_list or max_pages == 0:
+	if not user_list or max_pages < 1:
 		return render_template(
 			'error.html',
 			message = 'Unable to load users.',
