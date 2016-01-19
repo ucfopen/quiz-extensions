@@ -48,7 +48,10 @@ def xml():
 @check_valid_user
 def quiz(course_id=None):
 	if not course_id:
-		return "course_id required"
+		return render_template(
+			'error.html',
+			message = 'course_id required',
+		)
 
 	course_url = "%scourses/%s" % (API_URL, course_id)
 
@@ -57,6 +60,12 @@ def quiz(course_id=None):
 		per_page=DEFAULT_PER_PAGE,
 		page=1
 	)
+
+	if not user_list or max_pages == 0:
+		return render_template(
+			'error.html',
+			message = 'Unable to load users.',
+		)
 
 	return render_template(
 		'userselect.html',
@@ -90,7 +99,7 @@ def update(course_id=None):
 
 		time_limit = quiz.get('time_limit', None)
 
-		if time_limit is None or time_limit == 0:
+		if time_limit is None or time_limit < 1:
 			# Quiz has no time limit so there is no time to add.
 			continue
 
@@ -138,6 +147,9 @@ def filter(course_id=None):
 		page=page,
 		search_term=query
 	)
+
+	if not user_list or max_pages < 1:
+		return 'Unable to load users.'
 
 	return render_template(
 		'user_list.html',
@@ -187,7 +199,7 @@ def search_users(course_url, per_page=DEFAULT_PER_PAGE, page=1, search_term=""):
 	user_list = users_response.json()
 
 	if 'errors' in user_list:
-		return "Error getting user list."
+		return [], 0
 
 	num_pages = int(
 		parse_qs(
