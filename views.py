@@ -264,7 +264,7 @@ def lti_tool():
 	if tool_provider.is_outcome_service():
 		return render_template('assessment.html', username=username)
 	else:
-		return redirect(url_for('quiz', course_id=course_id, **request.form))
+		return redirect(url_for('quiz', course_id=course_id))
 
 
 def was_nonce_used_in_last_x_minutes(nonce, minutes):
