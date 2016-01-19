@@ -4,3 +4,5 @@ servername = 'http://' + server_ip + ':5000'
 ENDPOINT = servername + '/endpoint'
 API_URL = '***REMOVED***'
 API_KEY = ''
+
+SECRET_KEY = ""

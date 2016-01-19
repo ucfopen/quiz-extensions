@@ -167,7 +167,7 @@ function ajaxSend() {
 			submit_button.disabled = true;
 			close_button.disabled = true;
 
-			update_status.innerHTML = "<p>Processing...</p>"
+			update_status.innerHTML = "<p>Processing...</p><p>(This may take a while)</p>"
 
 			percent_form.style.display = "none";
 			update_status.style.display = "";

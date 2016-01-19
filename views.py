@@ -1,6 +1,7 @@
 from flask import Flask, render_template, session, request,\
 	redirect, url_for
 from config import *
+from functools import wraps
 
 import requests
 import json
@@ -24,10 +25,18 @@ DEFAULT_PER_PAGE = 10
 MAX_PER_PAGE = 100
 
 
+def check_valid_user(f):
+	@wraps(f)
+	def decorated_function(*args, **kwargs):
+		if not session.get('lti_logged_in') or not session.get('canvas_user_id'):
+			return "Not allowed!"
+		return f(*args, **kwargs)
+	return decorated_function
+
+
 @app.route("/", methods=['POST', 'GET'])
 def index():
-	msg = "This is the index."
-	return render_template('index.html', msg=msg)
+	return "Please contact Online@UCF support."
 
 
 @app.route("/xml/", methods=['POST', 'GET'])
@@ -36,6 +45,7 @@ def xml():
 
 
 @app.route("/quiz/<course_id>", methods=['POST', 'GET'])
+@check_valid_user
 def quiz(course_id=None):
 	if not course_id:
 		return "course_id required"
@@ -58,6 +68,7 @@ def quiz(course_id=None):
 
 
 @app.route("/update/<course_id>/", methods=['POST'])
+@check_valid_user
 def update(course_id=None):
 	if not course_id:
 		return "course_id required"
@@ -110,6 +121,7 @@ def update(course_id=None):
 
 
 @app.route("/filter/<course_id>/", methods=['POST', 'GET'])
+@check_valid_user
 def filter(course_id=None):
 	if not course_id:
 		return "course_id required"
@@ -191,6 +203,11 @@ def search_users(course_url, per_page=DEFAULT_PER_PAGE, page=1, search_term=""):
 @app.route('/launch', methods = ['POST'])
 def lti_tool():
 	course_id = request.form.get('custom_canvas_course_id')
+	canvas_user_id = request.form.get('custom_canvas_user_id')
+
+	roles = request.form['ext_roles']
+	if not "Administrator" in roles or not "Instructor" in roles:
+		return "Must be an Administrator or Instructor"
 
 	key = request.form.get('oauth_consumer_key')
 	if key:
@@ -220,6 +237,9 @@ def lti_tool():
 	if was_nonce_used_in_last_x_minutes(tool_provider.oauth_nonce, 60):
 		return render_template('error.html', message = 'Why are you reusing the nonce?')
 
+	session['canvas_user_id'] = canvas_user_id
+	session['lti_logged_in'] = True
+
 	session['launch_params'] = tool_provider.to_params()
 	username = tool_provider.username('Dude')
 
@@ -234,4 +254,5 @@ def was_nonce_used_in_last_x_minutes(nonce, minutes):
 
 if __name__ == "__main__":
 	app.debug = True
+	app.secret_key = SECRET_KEY
 	app.run(host="0.0.0.0", port=8080)
