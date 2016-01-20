@@ -107,11 +107,7 @@ go_button.addEventListener('click', function(e) {
 });
 
 clear_button.addEventListener('click', function(e) {
-	var num_selected_users = selected_user_list.children.length;
-
-	for (var i=0; i<num_selected_users; i++) {
-		selected_user_list.children[0].click();
-	}
+	clearSelectedStudents();
 })
 
 submit_button.addEventListener('click', function(e) {
@@ -122,6 +118,14 @@ close_button.addEventListener('click', function(e) {
 	percent_form.style.display = "";
 	update_status.style.display = "none";
 })
+
+function clearSelectedStudents() {
+	var num_selected_users = selected_user_list.children.length;
+
+	for (var i=0; i<num_selected_users; i++) {
+		selected_user_list.children[0].click();
+	}
+}
 
 function ajaxFilter(query, page, callback) {
 	var xhttp = new XMLHttpRequest();
@@ -177,6 +181,7 @@ function ajaxSend() {
 		if (xhttp.readyState == 4 && xhttp.status == 200) {
 			update_status.innerHTML = "<p>"+ xhttp.responseText + "</p>";
 			close_button.disabled = false;
+			clearSelectedStudents();
 			return
 		}
 	}
