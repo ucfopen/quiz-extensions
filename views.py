@@ -161,6 +161,10 @@ def update(course_id=None):
 	percent = post_json.get('percent', None)
 
 	quizzes = get_quizzes(course_url)
+	num_quizzes = len(quizzes)
+
+	if num_quizzes < 1:
+		return "Sorry, there are no quizzes for this course."
 
 	for quiz in quizzes:
 		quiz_id = quiz.get('id', None)
@@ -184,17 +188,17 @@ def update(course_id=None):
 			}
 			quiz_extensions['quiz_extensions'].append(user_extension)
 
-		response = requests.post(
+		extensions_response = requests.post(
 			"%s/quizzes/%s/extensions" % (course_url, quiz_id),
 			data=json.dumps(quiz_extensions),
 			headers=json_headers
 		)
 
-		if response.status_code != 200:
-			return "Something went wrong. Status code %s" % (response.status_code)
+		if extensions_response.status_code != 200:
+			return "Something went wrong. Status code %s" % (extensions_response.status_code)
 
-	quiz_string = "quizzes have" if quiz > 1 else "quiz has"
-	return "Success! %s %s been updated for %s student(s) to have %s%% time." % (len(quizzes), quiz_string, len(user_ids), percent)
+	quiz_string = "quizzes have" if num_quizzes > 1 else "quiz has"
+	return "Success! %s %s been updated for %s student(s) to have %s%% time." % (num_quizzes, quiz_string, len(user_ids), percent)
 
 
 @app.route("/filter/<course_id>/", methods=['GET'])
