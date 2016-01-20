@@ -114,7 +114,7 @@ def quiz(course_id=None):
 	if not user_list or max_pages < 1:
 		return render_template(
 			'error.html',
-			message='Unable to load users.',
+			message='Unable to load students.',
 		)
 
 	return render_template(
@@ -276,7 +276,10 @@ def search_users(course_url, per_page=DEFAULT_PER_PAGE, page=1, search_term=""):
 
 	users_response = requests.get(
 		users_url,
-		data={'search_term': search_term},
+		data={
+			'search_term': search_term,
+			'enrollment_type': 'student'
+		},
 		headers=headers
 	)
 	user_list = users_response.json()
