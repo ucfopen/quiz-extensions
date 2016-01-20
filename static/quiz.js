@@ -178,13 +178,19 @@ function ajaxSend() {
 			return
 		}
 
-		if (xhttp.readyState == 4 && xhttp.status == 200) {
-			update_status.innerHTML = "<p>"+ xhttp.responseText + "</p>";
+		if (xhttp.readyState == 4) {
+			if (xhttp.status == 200) {
+				update_status.innerHTML = "<p>"+ xhttp.responseText + "</p>";
+				clearSelectedStudents();
+			}
+			else {
+				update_status.innerHTML = "<p>Encountered an error. Status "+ xhttp.status + "</p>"
+			}
 			close_button.disabled = false;
-			clearSelectedStudents();
 			return
 		}
 	}
+
 	xhttp.open("POST", "/update/"+course_id+"/", true);
 	xhttp.setRequestHeader("Content-Type", "application/json");
 	xhttp.send(JSON.stringify(users_percent_obj));
