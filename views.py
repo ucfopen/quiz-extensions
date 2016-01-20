@@ -28,6 +28,12 @@ MAX_PER_PAGE = 100
 def check_valid_user(f):
 	@wraps(f)
 	def decorated_function(*args, **kwargs):
+		"""
+		Decorator to check if the user is allowed access to the app.
+
+		If user is allowed, return the decorated function.
+		Otherwise, return an error page with corresponding message.
+		"""
 		canvas_user_id = session.get('canvas_user_id')
 		if not session.get('lti_logged_in') or not canvas_user_id:
 			return render_template(
@@ -68,17 +74,29 @@ def check_valid_user(f):
 
 @app.route("/", methods=['POST', 'GET'])
 def index():
+	"""
+	Default app index.
+	"""
 	return "Please contact Online@UCF support."
 
 
 @app.route("/xml/", methods=['POST', 'GET'])
 def xml():
+	"""
+	Returns the lti.xml file for the app.
+	"""
 	return render_template('lti.xml')
 
 
-@app.route("/quiz/<course_id>", methods=['POST', 'GET'])
+@app.route("/quiz/<course_id>", methods=['GET'])
 @check_valid_user
 def quiz(course_id=None):
+	"""
+	Main landing page for the app.
+
+	Displays a page to the user that allows them to select students
+	to moderate quizzes for.
+	"""
 	if not course_id:
 		return render_template(
 			'error.html',
@@ -111,6 +129,24 @@ def quiz(course_id=None):
 @app.route("/update/<course_id>/", methods=['POST'])
 @check_valid_user
 def update(course_id=None):
+	"""
+	Processes requests to update time on selected students' quizzes to
+	a specified percentage.
+
+	Accepts a JSON formatted object that includes the percent of time
+	and a list of canvas user ids.
+
+	Example:
+	{
+		"percent": "300",
+		"user_ids": [
+			"0123456",
+			"1234567",
+			"9867543",
+			"5555555"
+		]
+	}
+	"""
 	if not course_id:
 		return "course_id required"
 
@@ -161,9 +197,12 @@ def update(course_id=None):
 	return "Success! %s %s been updated for %s student(s) to have %s%% time." % (len(quizzes), quiz_string, len(user_ids), percent)
 
 
-@app.route("/filter/<course_id>/", methods=['POST', 'GET'])
+@app.route("/filter/<course_id>/", methods=['GET'])
 @check_valid_user
 def filter(course_id=None):
+	"""
+	Displays a filtered and paginated list of students in the course.
+	"""
 	if not course_id:
 		return "course_id required"
 
@@ -192,6 +231,9 @@ def filter(course_id=None):
 
 
 def get_quizzes(course_url, per_page=MAX_PER_PAGE):
+	"""
+	Returns a list of all quizzes in the course.
+	"""
 	quizzes = []
 	quizzes_url = "%s/quizzes?per_page=%d" % (course_url, per_page)
 
@@ -217,6 +259,11 @@ def get_quizzes(course_url, per_page=MAX_PER_PAGE):
 
 
 def search_users(course_url, per_page=DEFAULT_PER_PAGE, page=1, search_term=""):
+	"""
+	Searches for students in the course.
+
+	If no search term is provided, all users are returned.
+	"""
 	users_url = "%s/search_users?per_page=%s&page=%s" % (
 		course_url,
 		per_page,
@@ -246,6 +293,9 @@ def search_users(course_url, per_page=DEFAULT_PER_PAGE, page=1, search_term=""):
 
 @app.route('/launch', methods=['POST'])
 def lti_tool():
+	"""
+	Bootstrapper for lti.
+	"""
 	course_id = request.form.get('custom_canvas_course_id')
 	canvas_user_id = request.form.get('custom_canvas_user_id')
 
