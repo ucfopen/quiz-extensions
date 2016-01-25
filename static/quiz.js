@@ -191,7 +191,7 @@ function ajaxSend() {
 		}
 	}
 
-	xhttp.open("POST", "/update/"+course_id+"/", true);
+	xhttp.open("POST", "update/"+course_id+"/", true);
 	xhttp.setRequestHeader("Content-Type", "application/json");
 	xhttp.send(JSON.stringify(users_percent_obj));
 }

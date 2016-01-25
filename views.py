@@ -16,7 +16,7 @@ app = Flask(__name__)
 app.secret_key = '***REMOVED***'
 app.debug = True
 
-oauth_creds = {'key': 'secret', 'eleven': '11'}
+oauth_creds = {'***REMOVED***': '***REMOVED***'}
 
 headers = {'Authorization': 'Bearer ' + API_KEY}
 json_headers = {'Authorization': 'Bearer ' + API_KEY, 'Content-type': 'application/json'}
