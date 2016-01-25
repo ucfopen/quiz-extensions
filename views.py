@@ -45,8 +45,8 @@ def check_valid_user(f):
 				'error.html',
 				message='No course_id provided.'
 			)
-		course_id = int(kwargs.get('course_id', 0))
-		user_enrollments_url = "%susers/%s/enrollments" % (API_URL, canvas_user_id)
+		course_id = int(kwargs.get('course_id'))
+		enrollments_url = "%scourses/%s/enrollments" % (API_URL, course_id)
 
 		payload = {
 			'user_id': canvas_user_id,
@@ -54,15 +54,13 @@ def check_valid_user(f):
 		}
 
 		user_enrollments_response = requests.get(
-			user_enrollments_url,
+			enrollments_url,
 			data=json.dumps(payload),
 			headers=json_headers
 		)
 		user_enrollments = user_enrollments_response.json()
 
-		enrollment_list = [enrollment.get('course_id') for enrollment in user_enrollments]
-
-		if not int(course_id) in enrollment_list:
+		if not user_enrollments or 'errors' in user_enrollments:
 			return render_template(
 				'error.html',
 				message='You are not enrolled in this course as a Teacher, TA, or Designer.'
