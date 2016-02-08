@@ -109,18 +109,10 @@ def quiz(course_id=None):
 		page=1
 	)
 
-	if not user_list or max_pages < 1:
-		return render_template(
-			'error.html',
-			message='Unable to load students.',
-		)
-
 	return render_template(
 		'userselect.html',
-		users=user_list,
 		course_id=course_id,
-		current_page_number=1,
-		max_pages=max_pages
+		current_page_number=1
 	)
 
 
@@ -222,7 +214,8 @@ def filter(course_id=None):
 	)
 
 	if not user_list or max_pages < 1:
-		return 'Unable to load users.'
+		user_list = []
+		max_pages = 1
 
 	return render_template(
 		'user_list.html',

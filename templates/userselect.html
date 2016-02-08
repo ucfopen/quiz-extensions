@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
 
-	<h1 class="text-center">Quiz Moderation LTI</h1>
-	<p class="text-center">Select students to moderate quizzes</p>
+	<h1 class="text-center">Quiz Extensions</h1>
+	<p class="text-center">Select from the list students to apply the same amount of extra time. For example, Suzy Johnson and Stephen Smith need double time. Select double time and submit. Note: The extra time is only applied to existing quizzes/exams. If additional quizzes/exams are added after, please repeat the process. This will replace any existing extensions. Additional help can be found at <a href="#">http://online.ucf.edu/link</a></p>
+	<!-- TODO: update link -->
 
 	<div id="container" class="container">
 		<div id="lists" class="row">
@@ -14,7 +15,7 @@
 					</form>
 				</div>
 				<div id="user_list_div">
-					{% include "user_list.html" %}
+					<!-- user_list loads here -->
 				</div>
 			</div>
 			<div id="selected_users" class="col-xs-6">
@@ -23,7 +24,7 @@
 				</div>
 				<div id="selected_user_list" class="btn-group-vertical"></div>
 				<button id="clear_button" type="button" class="btn btn-danger pull-left"><span class="glyphicon glyphicon-remove"></span> Clear</button>
-				<button id="go_button" type="button" class="btn btn-success pull-right" data-toggle="modal" data-target="#go_modal"><span class="glyphicon glyphicon-ok"></span> Go</button>
+				<button id="go_button" type="button" class="btn btn-success pull-right" data-toggle="modal" data-target="#go_modal"><span class="glyphicon glyphicon-ok"></span> Submit</button>
 			</div>
 		</div>
 	</div>
@@ -34,16 +35,17 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-					<h4 class="modal-title">Change Time</h4>
+					<h4 class="modal-title">Extend Time</h4>
 				</div>
 				<div class="modal-body text-center">
 
 					<div id="percent_form" class="form-inline">
-						<p>Choose a default percentage or supply a custom one.</p>
+						<p>Choose a predetermined extension or set a custom extension represented by percentage. For example, double time and a half would be 250%.</p>
 						<select id="percent_select" class="form-control">
-							<option>100%</option>
-							<option selected>200%</option>
-							<option>400%</option>
+							<option value="100">Normal (1x)</option>
+							<option value="200" selected>Double (2x)</option>
+							<option value="300">Triple (3x)</option>
+							<option value="400">Quadruple (4x)</option>
 						</select>
 						or
 						<input id="percent_input" type="number" min="100" class="form-control"> %

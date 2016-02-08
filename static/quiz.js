@@ -147,7 +147,7 @@ function getPercent() {
 		return percent_input.value;
 	}
 	else {
-		return percent_select.value.replace(/%/g, '');
+		return percent_select.value;
 	}
 }
 
@@ -227,7 +227,7 @@ function checkIfEmpty() {
 	if (user_list_children.length <= 0) {
 		var p = document.createElement("p");
 		p.className = "no-matching"
-		p.innerHTML = "No matching users found.";
+		p.innerHTML = "No matching students found.";
 		user_list.appendChild(p);
 	}
 	else {
@@ -237,3 +237,6 @@ function checkIfEmpty() {
 		}
 	}
 }
+
+// load initial user list
+window.onload = ajaxFilter('', 1, update_user_list)
