@@ -350,4 +350,4 @@ def was_nonce_used_in_last_x_minutes(nonce, minutes):
 if __name__ == "__main__":
 	app.debug = True
 	app.secret_key = SECRET_KEY
-	app.run(host="0.0.0.0", port=8080)
+	app.run(host="0.0.0.0", ssl_context=SSL_CONTEXT, port=8080)
