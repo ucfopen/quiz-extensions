@@ -144,9 +144,11 @@ function ajaxFilter(query, page, callback) {
 
 function getPercent() {
 	if (percent_input.value != null && percent_input.value >= 100) {
+		percent_select.disabled = true;
 		return percent_input.value;
 	}
 	else {
+		percent_select.disabled = false;
 		return percent_select.value;
 	}
 }
@@ -182,6 +184,7 @@ function ajaxSend() {
 			if (xhttp.status == 200) {
 				update_status.innerHTML = "<p>"+ xhttp.responseText + "</p>";
 				clearSelectedStudents();
+				percent_input.value = "";
 			}
 			else {
 				update_status.innerHTML = "<p>Encountered an error. Status "+ xhttp.status + "</p>"
