@@ -2,7 +2,7 @@
 {% block content %}
 
 	<h1 class="text-center">Quiz Extensions</h1>
-	<p class="text-center">Select from the list students to apply the same amount of extra time. For example, Suzy Johnson and Stephen Smith need double time. Select double time and submit. Note: The extra time is only applied to existing quizzes/exams. If additional quizzes/exams are added after, please repeat the process. This will replace any existing extensions. Additional help can be found at <a href="#">http://online.ucf.edu/link</a></p>
+	<p>Select from the list students to apply the same amount of extra time. For example, Suzy Johnson and Stephen Smith need double time. Select double time and submit. Note: The extra time is only applied to existing quizzes/exams. If additional quizzes/exams are added after, please repeat the process. This will replace any existing extensions. Additional help can be found at <a href="#">http://online.ucf.edu/link</a></p>
 	<!-- TODO: update link -->
 
 	<div id="container" class="container">
@@ -29,12 +29,12 @@
 		</div>
 	</div>
 
-	<div id="go_modal" class="modal fade" role="dialog">
+	<div id="go_modal" class="modal fade" role="dialog" data-backdrop="static">
 		<div class="modal-dialog">
 
 			<div class="modal-content">
 				<div class="modal-header">
-					<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+					<button type="button" id="close_x" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
 					<h4 class="modal-title">Extend Time</h4>
 				</div>
 				<div class="modal-body text-center">

@@ -152,12 +152,15 @@ def update(course_id=None):
 
 	quizzes = get_quizzes(course_url)
 	num_quizzes = len(quizzes)
+	num_changed_quizzes = 0
+	quiz_time_list = []
 
 	if num_quizzes < 1:
 		return "Sorry, there are no quizzes for this course."
 
 	for quiz in quizzes:
 		quiz_id = quiz.get('id', None)
+		quiz_title = quiz.get('title', "[UNTITLED QUIZ]")
 
 		time_limit = quiz.get('time_limit', None)
 
@@ -166,6 +169,12 @@ def update(course_id=None):
 			continue
 
 		added_time = math.ceil(time_limit * ((float(percent)-100) / 100) if percent else 0)
+		quiz_time_list.append(
+			{
+				"title": quiz_title,
+				"added_time": added_time
+			}
+		)
 
 		quiz_extensions = {
 			'quiz_extensions': []
@@ -185,10 +194,31 @@ def update(course_id=None):
 		)
 
 		if extensions_response.status_code != 200:
-			return "Something went wrong. Status code %s" % (extensions_response.status_code)
+			return json.dumps({
+				"error": True,
+				"message": "Something went wrong. Status code %s" % (
+					extensions_response.status_code
+				)
+			})
+		num_changed_quizzes += 1
 
-	quiz_string = "quizzes have" if num_quizzes > 1 else "quiz has"
-	return "Success! %s %s been updated for %s student(s) to have %s%% time." % (num_quizzes, quiz_string, len(user_ids), percent)
+	num_unchanged_quizzes = num_quizzes - num_changed_quizzes
+
+	message = "Success! %s %s been updated for %s student(s) to have %s%% time. \
+		%s %s no time limit and were left unchanged." % (
+		num_changed_quizzes,
+		"quizzes have" if num_changed_quizzes != 1 else "quiz has",
+		len(user_ids),
+		percent,
+		num_unchanged_quizzes,
+		"quizzes have" if num_unchanged_quizzes != 1 else "quiz has"
+	)
+
+	return json.dumps({
+		"error": False,
+		"message": message,
+		"quiz_list": quiz_time_list
+	})
 
 
 @app.route("/filter/<course_id>/", methods=['GET'])
