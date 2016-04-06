@@ -156,7 +156,10 @@ def update(course_id=None):
 	quiz_time_list = []
 
 	if num_quizzes < 1:
-		return "Sorry, there are no quizzes for this course."
+		return json.dumps({
+			"error": True,
+			"message": "Sorry, there are no quizzes for this course."
+		})
 
 	for quiz in quizzes:
 		quiz_id = quiz.get('id', None)
