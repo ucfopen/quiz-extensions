@@ -13,6 +13,7 @@ var clear_button = document.getElementById("clear_button");
 var submit_button = document.getElementById("submit_button");
 var update_status = document.getElementById("update_status");
 var close_button = document.getElementById("close_button");
+var close_x = document.getElementById("close_x");
 
 user_list_div.addEventListener('click', function(e) {
 	e.preventDefault();
@@ -58,8 +59,6 @@ selected_user_list.addEventListener('click', function(e) {
 			}
 		}
 
-		console.log(user_list);
-
 		selected_user_list.removeChild(selected_user_li);
 
 		checkIfEmpty();
@@ -90,6 +89,7 @@ go_button.addEventListener('click', function(e) {
 		submit_button.disabled = true;
 	}
 	else {
+		submit_button.style.display = "";
 		submit_button.disabled = false;
 	}
 
@@ -114,7 +114,7 @@ submit_button.addEventListener('click', function(e) {
 	ajaxSend();
 })
 
-close_button.addEventListener('click', function(e) {
+$("#go_modal").on('hidden.bs.modal', function(e) {
 	percent_form.style.display = "";
 	update_status.style.display = "none";
 })
@@ -143,11 +143,18 @@ function ajaxFilter(query, page, callback) {
 }
 
 function getPercent() {
-	if (percent_input.value != null && percent_input.value >= 100) {
-		return percent_input.value;
+	if (percent_input.value != null && percent_input.value != "") {
+		percent_select.disabled = true;
+		if (percent_input.value >= 100) {
+			return percent_input.value;
+		}
+		else {
+			return percent_select.value
+		}
 	}
 	else {
-		return percent_select.value.replace(/%/g, '');
+		percent_select.disabled = false;
+		return percent_select.value;
 	}
 }
 
@@ -168,10 +175,11 @@ function ajaxSend() {
 
 	xhttp.onreadystatechange = function() {
 		if (xhttp.readyState == 1) {
-			submit_button.disabled = true;
+			submit_button.style.display = "none";
 			close_button.disabled = true;
+			close_x.style.display = "none";
 
-			update_status.innerHTML = "<p>Processing...</p><p>(This may take a while)</p>"
+			update_status.innerHTML = "<p>Processing...</p><p>(This may take a few minutes)</p>"
 
 			percent_form.style.display = "none";
 			update_status.style.display = "";
@@ -180,13 +188,29 @@ function ajaxSend() {
 
 		if (xhttp.readyState == 4) {
 			if (xhttp.status == 200) {
-				update_status.innerHTML = "<p>"+ xhttp.responseText + "</p>";
+				var response = JSON.parse(xhttp.responseText);
+				update_status.innerHTML = "<p>"+ response["message"] + "</p>";
+				if (!response["error"]) {
+					quiz_list = response["quiz_list"];
+					var table_html = "<div id='table_div'><table class='table table-striped table-condensed'><thead><tr><th scope='col'>Quiz Title</th><th scope='col'>Minutes Extended</th></tr></thead><tbody>";
+					for (var x in quiz_list) {
+						table_html += "<tr><td>" +
+							quiz_list[x]["title"] +
+							"</td><td>" +
+							quiz_list[x]["added_time"] +
+							"</td></tr>";
+					}
+					table_html += "</tbody></table></div>";
+					update_status.innerHTML += table_html;
+				}
 				clearSelectedStudents();
+				percent_input.value = "";
 			}
 			else {
 				update_status.innerHTML = "<p>Encountered an error. Status "+ xhttp.status + "</p>"
 			}
 			close_button.disabled = false;
+			close_x.style.display = "";
 			return
 		}
 	}
@@ -227,7 +251,7 @@ function checkIfEmpty() {
 	if (user_list_children.length <= 0) {
 		var p = document.createElement("p");
 		p.className = "no-matching"
-		p.innerHTML = "No matching users found.";
+		p.innerHTML = "No matching students found.";
 		user_list.appendChild(p);
 	}
 	else {
@@ -237,3 +261,6 @@ function checkIfEmpty() {
 		}
 	}
 }
+
+// load initial user list
+window.onload = ajaxFilter('', 1, update_user_list)

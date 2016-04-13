@@ -6,3 +6,5 @@ API_URL = '***REMOVED***'
 API_KEY = ''
 
 SECRET_KEY = ""
+
+SSL_CONTEXT = None
