@@ -12,3 +12,10 @@ SSL_CONTEXT = None
 
 OAUTH_KEY = ''
 OAUTH_SECRET = ''
+
+LTI_KEY = ''
+LTI_SECRET = ''
+
+LTI_TOOL_ID = ''
+LTI_DOMAIN = ''
+LTI_LAUNCH_URL = ''

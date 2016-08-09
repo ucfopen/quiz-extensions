@@ -13,7 +13,7 @@ from time import time
 
 app = Flask(__name__)
 
-oauth_creds = {OAUTH_KEY: OAUTH_SECRET}
+oauth_creds = {LTI_KEY: LTI_SECRET}
 
 headers = {'Authorization': 'Bearer ' + API_KEY}
 json_headers = {'Authorization': 'Bearer ' + API_KEY, 'Content-type': 'application/json'}
@@ -82,7 +82,12 @@ def xml():
     """
     Returns the lti.xml file for the app.
     """
-    return render_template('lti.xml')
+    return render_template(
+        'lti.xml',
+        tool_id=LTI_TOOL_ID,
+        domain=LTI_DOMAIN,
+        launch_url=LTI_LAUNCH_URL
+    )
 
 
 @app.route("/quiz/<course_id>", methods=['GET'])
