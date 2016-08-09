@@ -1,10 +1,14 @@
-server_ip = "***REMOVED***"
-servername = 'http://' + server_ip + ':5000'
+DEBUG = False
 
-ENDPOINT = servername + '/endpoint'
-API_URL = '***REMOVED***'
+HOST = ''
+PORT = ''
+
+API_URL = ''
 API_KEY = ''
 
-SECRET_KEY = ""
+SECRET_KEY = ''
 
 SSL_CONTEXT = None
+
+OAUTH_KEY = ''
+OAUTH_SECRET = ''

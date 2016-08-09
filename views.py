@@ -12,10 +12,8 @@ from ims_lti_py import ToolProvider
 from time import time
 
 app = Flask(__name__)
-app.secret_key = '***REMOVED***'
-app.debug = True
 
-oauth_creds = {'***REMOVED***': '***REMOVED***'}
+oauth_creds = {OAUTH_KEY: OAUTH_SECRET}
 
 headers = {'Authorization': 'Bearer ' + API_KEY}
 json_headers = {'Authorization': 'Bearer ' + API_KEY, 'Content-type': 'application/json'}
@@ -389,6 +387,6 @@ def was_nonce_used_in_last_x_minutes(nonce, minutes):
     return False
 
 if __name__ == "__main__":
-    app.debug = True
+    app.debug = DEBUG
     app.secret_key = SECRET_KEY
-    app.run(host="0.0.0.0", ssl_context=SSL_CONTEXT, port=8080)
+    app.run(host=HOST, ssl_context=SSL_CONTEXT, port=PORT)
