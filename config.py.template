@@ -10,9 +10,6 @@ SECRET_KEY = ''
 
 SSL_CONTEXT = None
 
-OAUTH_KEY = ''
-OAUTH_SECRET = ''
-
 LTI_KEY = ''
 LTI_SECRET = ''
 
