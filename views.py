@@ -74,7 +74,7 @@ def index():
     """
     Default app index.
     """
-    return "Please contact Online@UCF support."
+    return "Please contact your System Administrator."
 
 
 @app.route("/xml/", methods=['POST', 'GET'])
