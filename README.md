@@ -2,13 +2,12 @@ A self-service LTI for faculty to easily extend time for multiple users for all 
 
 Installation
 ------------
-(TODO: update link to use GitHub)
 
     git clone git@github.com:ucfcdl/quiz-extensions-license.git
 
 Switch into the new directory
 
-    cd quiz-extensions-licensed
+    cd quiz-extensions-license
 
 Create the config file from the template
 
