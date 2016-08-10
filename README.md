@@ -1,10 +1,10 @@
-Create a self-service LTI for faculty to easily extend time for multiple users for all quizzes at once.
+A self-service LTI for faculty to easily extend time for multiple users for all quizzes at once.
 
 Installation
 ------------
 (TODO: update link to use GitHub)
 
-    git clone git@***REMOVED***/quiz-extensions-licensed.git
+    git clone git@github.com:ucfcdl/quiz-extensions-license.git
 
 Switch into the new directory
 
@@ -16,10 +16,10 @@ Create the config file from the template
 
 Fill in the config file
 
-DEBUG = False  # Leave False on production
+	DEBUG = False  # Leave False on production
 
 	HOST = ''  # The IP/URL to run the server on
-	PORT =  5000 # The port to run the server on. Must be an integer
+	PORT = 5000  # The port to run the server on. Must be an integer
 
 	API_URL = ''  # Canvas API URL (e.g. 'http://example.com/api/v1/')
 	API_KEY = ''  # Canvas API Key
