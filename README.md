@@ -127,5 +127,6 @@ Edit your config.py and change the variables to match your server:
 	LTI_LAUNCH_URL = 'https://url.com/quiz-ext/launch'  # Launch URL for the LTI, This should match the url for `lti_tool` in views.py 
 
 Finally:
+	
 	sudo service apache2 reload
 	
