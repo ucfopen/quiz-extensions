@@ -105,14 +105,6 @@ def quiz(course_id=None):
             message='course_id required',
         )
 
-    course_url = "%scourses/%s" % (API_URL, course_id)
-
-    user_list, max_pages = search_users(
-        course_url,
-        per_page=DEFAULT_PER_PAGE,
-        page=1
-    )
-
     return render_template(
         'userselect.html',
         course_id=course_id,
