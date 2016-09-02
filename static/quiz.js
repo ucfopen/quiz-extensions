@@ -14,6 +14,7 @@ var submit_button = document.getElementById("submit_button");
 var update_status = document.getElementById("update_status");
 var close_button = document.getElementById("close_button");
 var close_x = document.getElementById("close_x");
+var i = 0;
 
 user_list_div.addEventListener('click', function(e) {
 	e.preventDefault();
@@ -24,7 +25,7 @@ user_list_div.addEventListener('click', function(e) {
 		var user_id = user_button.getAttribute("data-user-id");
 
 		var is_duplicate = false;
-		for (var i=0; i<selected_user_list.children.length; i++) {
+		for (i=0; i<selected_user_list.children.length; i++) {
 			var selected_user = selected_user_list.children[i];
 			if (selected_user.getAttribute("data-user-id") == user_id) {
 				is_duplicate = true;
@@ -52,7 +53,7 @@ selected_user_list.addEventListener('click', function(e) {
 		var selected_user_li = e.target;
 		var selected_user_id = selected_user_li.getAttribute("data-user-id");
 
-		for (var i=0; i<user_list.children.length; i++) {
+		for (i=0; i<user_list.children.length; i++) {
 			var user = user_list.children[i];
 			if (user.getAttribute("data-user-id") == selected_user_id) {
 				user.disabled = false;
@@ -85,7 +86,7 @@ go_button.addEventListener('click', function(e) {
 	modal_selected_user_list.innerHTML = "";
 	var num_selected_users = selected_user_list.children.length;
 
-	if (num_selected_users == 0) {
+	if (num_selected_users === 0) {
 		submit_button.disabled = true;
 	}
 	else {
@@ -93,7 +94,7 @@ go_button.addEventListener('click', function(e) {
 		submit_button.disabled = false;
 	}
 
-	for (var i=0; i<num_selected_users; i++) {
+	for (i=0; i<num_selected_users; i++) {
 		var user_id = selected_user_list.children[i].getAttribute("data-user-id");
 		var user_name = selected_user_list.children[i].innerHTML;
 
@@ -103,26 +104,25 @@ go_button.addEventListener('click', function(e) {
 
 		modal_selected_user_list.appendChild(new_li);
 	}
-
 });
 
 clear_button.addEventListener('click', function(e) {
 	clearSelectedStudents();
-})
+});
 
 submit_button.addEventListener('click', function(e) {
 	ajaxSend();
-})
+});
 
 $("#go_modal").on('hidden.bs.modal', function(e) {
 	percent_form.style.display = "";
 	update_status.style.display = "none";
-})
+});
 
 function clearSelectedStudents() {
 	var num_selected_users = selected_user_list.children.length;
 
-	for (var i=0; i<num_selected_users; i++) {
+	for (i=0; i<num_selected_users; i++) {
 		selected_user_list.children[0].click();
 	}
 }
@@ -136,20 +136,20 @@ function ajaxFilter(query, page, callback) {
 		if (xhttp.readyState == 4 && xhttp.status == 200) {
 			user_list_div.innerHTML = xhttp.responseText;
 		}
-	}
+	};
 	xhttp.onload = callback;
 	xhttp.open("GET", filter_url+"?query=" + query + "&page=" + page, true);
 	xhttp.send();
 }
 
 function getPercent() {
-	if (percent_input.value != null && percent_input.value != "") {
+	if (percent_input.value !== null && percent_input.value !== "") {
 		percent_select.disabled = true;
 		if (percent_input.value >= 100) {
 			return percent_input.value;
 		}
 		else {
-			return percent_select.value
+			return percent_select.value;
 		}
 	}
 	else {
@@ -168,7 +168,7 @@ function ajaxSend() {
 		percent: getPercent()
 	};
 
-	for (var i=0; i<selected_users.length; i++) {
+	for (i=0; i<selected_users.length; i++) {
 		var user_id = selected_users[i].getAttribute("data-user-id");
 		users_percent_obj.user_ids.push(user_id);
 	}
@@ -179,11 +179,11 @@ function ajaxSend() {
 			close_button.disabled = true;
 			close_x.style.display = "none";
 
-			update_status.innerHTML = "<p>Processing...</p><p>(This may take a few minutes)</p>"
+			update_status.innerHTML = "<p>Processing...</p><p>(This may take a few minutes)</p>";
 
 			percent_form.style.display = "none";
 			update_status.style.display = "";
-			return
+			return;
 		}
 
 		if (xhttp.readyState == 4) {
@@ -207,13 +207,13 @@ function ajaxSend() {
 				percent_input.value = "";
 			}
 			else {
-				update_status.innerHTML = "<p>Encountered an error. Status "+ xhttp.status + "</p>"
+				update_status.innerHTML = "<p>Encountered an error. Status "+ xhttp.status + "</p>";
 			}
 			close_button.disabled = false;
 			close_x.style.display = "";
-			return
+			return;
 		}
-	}
+	};
 
 	xhttp.open("POST", update_url, true);
 	xhttp.setRequestHeader("Content-Type", "application/json");
@@ -233,11 +233,11 @@ function disableAlreadySelected() {
 	var users = user_list.children;
 	var selected_users = selected_user_list.children;
 
-	for (var i=0; i<selected_users.length; i++) {
+	for (i=0; i<selected_users.length; i++) {
 		selected_user_ids.push(selected_users[i].getAttribute("data-user-id"));
 	}
 
-	for (var i=0; i<users.length; i++) {
+	for (i=0; i<users.length; i++) {
 		var user_id = users[i].getAttribute("data-user-id");
 		if (selected_user_ids.indexOf(user_id) > -1) {
 			user_list.children[i].setAttribute("disabled", true);
@@ -250,17 +250,17 @@ function checkIfEmpty() {
 
 	if (user_list_children.length <= 0) {
 		var p = document.createElement("p");
-		p.className = "no-matching"
+		p.className = "no-matching";
 		p.innerHTML = "No matching students found.";
 		user_list.appendChild(p);
 	}
 	else {
 		no_matching_warnings = user_list.getElementsByClassName("no-matching");
-		for (var i=0; i<no_matching_warnings.length; i++) {
+		for (i=0; i<no_matching_warnings.length; i++) {
 			user_list.removeChild(no_matching_warnings[i]);
 		}
 	}
 }
 
 // load initial user list
-window.onload = ajaxFilter('', 1, update_user_list)
+window.onload = ajaxFilter('', 1, update_user_list);
