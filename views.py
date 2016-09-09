@@ -201,8 +201,7 @@ def update(course_id=None):
 
         db.session.commit()
 
-    course_url = "%scourses/%s" % (API_URL, course_id)
-    quizzes = get_quizzes(course_url)
+    quizzes = get_quizzes(course_id)
     num_quizzes = len(quizzes)
     num_changed_quizzes = 0
     quiz_time_list = []
@@ -255,7 +254,7 @@ def update(course_id=None):
             quiz_extensions['quiz_extensions'].append(user_extension)
 
         extensions_response = requests.post(
-            "%s/quizzes/%s/extensions" % (course_url, quiz_id),
+            "%scourses/%s/quizzes/%s/extensions" % (API_URL, course_id, quiz_id),
             data=json.dumps(quiz_extensions),
             headers=json_headers
         )
@@ -297,14 +296,12 @@ def filter(course_id=None):
     if not course_id:
         return "course_id required"
 
-    course_url = "%scourses/%s" % (API_URL, course_id)
-
     query = request.args.get('query', '').lower()
     page = int(request.args.get('page', 1))
     per_page = int(request.args.get('per_page', DEFAULT_PER_PAGE))
 
     user_list, max_pages = search_users(
-        course_url,
+        course_id,
         per_page=per_page,
         page=page,
         search_term=query
@@ -322,12 +319,12 @@ def filter(course_id=None):
     )
 
 
-def get_quizzes(course_url, per_page=MAX_PER_PAGE):
+def get_quizzes(course_id, per_page=MAX_PER_PAGE):
     """
     Returns a list of all quizzes in the course.
     """
     quizzes = []
-    quizzes_url = "%s/quizzes?per_page=%d" % (course_url, per_page)
+    quizzes_url = "%scourses/%s/quizzes?per_page=%d" % (API_URL, course_id, per_page)
 
     while True:
         quizzes_response = requests.get(quizzes_url, headers=headers)
@@ -350,14 +347,15 @@ def get_quizzes(course_url, per_page=MAX_PER_PAGE):
     return quizzes
 
 
-def search_users(course_url, per_page=DEFAULT_PER_PAGE, page=1, search_term=""):
+def search_users(course_id, per_page=DEFAULT_PER_PAGE, page=1, search_term=""):
     """
     Searches for students in the course.
 
     If no search term is provided, all users are returned.
     """
-    users_url = "%s/search_users?per_page=%s&page=%s" % (
-        course_url,
+    users_url = "%s/courses/%s/search_users?per_page=%s&page=%s" % (
+        API_URL,
+        course_id,
         per_page,
         page
     )
