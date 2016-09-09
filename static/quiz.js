@@ -122,7 +122,7 @@ $("#go_modal").on('hidden.bs.modal', function(e) {
 function clearSelectedStudents() {
 	var num_selected_users = selected_user_list.children.length;
 
-	for (i=0; i<num_selected_users; i++) {
+	while (selected_user_list.children.length > 0) {
 		selected_user_list.children[0].click();
 	}
 }

@@ -11,7 +11,12 @@ from urlparse import parse_qs, urlsplit
 from ims_lti_py import ToolProvider
 from time import time
 
+from models import db, Course, Extension, Quiz, User
+
 app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_DATABASE_URI
+
+db.init_app(app)
 
 oauth_creds = {LTI_KEY: LTI_SECRET}
 
@@ -136,16 +141,67 @@ def update(course_id=None):
     if not course_id:
         return "course_id required"
 
-    course_url = "%scourses/%s" % (API_URL, course_id)
-
     post_json = request.get_json()
 
     if not post_json:
         return "invalid request"
 
+    course_json = get_course(course_id)
+    course_name = course_json.get('name', '<UNNAMED COURSE>')
+
+    # add/update course in db
+    course = Course.query.filter_by(canvas_id=course_id).first()
+    if course is None:
+        course = Course(course_id, course_name)
+        db.session.add(course)
+    else:
+        course.canvas_id = course_id
+        course.course_name = course_name
+
+    db.session.commit()
+
     user_ids = post_json.get('user_ids', [])
     percent = post_json.get('percent', None)
 
+    if not percent:
+        return "percent required"
+
+    # add/update users in db
+    for user_id in user_ids:
+        user = User.query.filter_by(canvas_id=user_id).first()
+
+        try:
+            canvas_user = get_user(user_id)
+
+            sortable_name = canvas_user.get('sortable_name', '<MISSING NAME>')
+            canvas_user_id = canvas_user.get('id')
+            sis_id = canvas_user.get('sis_user_id')
+
+        except requests.exceptions.HTTPError:
+            # unable to find user
+            continue
+
+        if user is None:
+            # create
+            user = User(sortable_name, canvas_user_id, sis_id)
+            db.session.add(user)
+        else:
+            # update
+            user.sortable_name = sortable_name
+            user.canvas_id = canvas_user_id
+            user.sis_id = sis_id
+
+        # create/update extension
+        extension = Extension.query.filter_by(course_id=course_id, user_id=user_id).first()
+        if extension is None:
+            extension = Extension(course_id, user_id, percent)
+            db.session.add(extension)
+        else:
+            extension.percent = percent
+
+        db.session.commit()
+
+    course_url = "%scourses/%s" % (API_URL, course_id)
     quizzes = get_quizzes(course_url)
     num_quizzes = len(quizzes)
     num_changed_quizzes = 0
@@ -162,6 +218,18 @@ def update(course_id=None):
         quiz_title = quiz.get('title', "[UNTITLED QUIZ]")
 
         time_limit = quiz.get('time_limit', None)
+
+        # add/update quiz
+        quiz_obj = Quiz.query.filter_by(canvas_id=quiz_id).first()
+        if quiz_obj is None:
+            quiz_obj = Quiz(quiz_id, course_id, quiz_title)
+            db.session.add(quiz_obj)
+        else:
+            quiz_obj.canvas_id = quiz_id
+            quiz_obj.course_id = course_id
+            quiz_obj.title = quiz_title
+
+        db.session.commit()
 
         if time_limit is None or time_limit < 1:
             # Quiz has no time limit so there is no time to add.
@@ -318,6 +386,36 @@ def search_users(course_url, per_page=DEFAULT_PER_PAGE, page=1, search_term=""):
     return user_list, num_pages
 
 
+def get_user(user_id):
+    """
+    Get a user from canvas by id.
+
+    :param user_id: ID of a Canvas user.
+    :type user_id: int
+    :rtype: dict
+    :returns: A dictionary representation of a User in Canvas.
+    """
+    response = requests.get(API_URL + 'users/' + user_id, headers=headers)
+    response.raise_for_status()
+
+    return response.json()
+
+
+def get_course(course_id):
+    """
+    Get a course from canvas by id.
+
+    :param course_id: ID of a Canvas course.
+    :type course_id: int
+    :rtype: dict
+    :returns: A dictionary representation of a Course in Canvas.
+    """
+    response = requests.get(API_URL + 'courses/' + course_id, headers=headers)
+    response.raise_for_status()
+
+    return response.json()
+
+
 @app.route('/launch', methods=['POST'])
 def lti_tool():
     """
@@ -382,6 +480,11 @@ def lti_tool():
 
 def was_nonce_used_in_last_x_minutes(nonce, minutes):
     return False
+
+
+@app.before_first_request
+def create_db():
+    db.create_all()
 
 if __name__ == "__main__":
     app.debug = DEBUG
