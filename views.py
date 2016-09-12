@@ -5,7 +5,7 @@ import requests
 import json
 import math
 
-#OAuth specific
+# OAuth specific
 from ims_lti_py import ToolProvider
 from time import time
 
@@ -38,7 +38,7 @@ def check_valid_user(f):
                 'error.html',
                 message='Not allowed!'
             )
-        if not 'course_id' in kwargs.keys():
+        if 'course_id' not in kwargs.keys():
             return render_template(
                 'error.html',
                 message='No course_id provided.'
@@ -324,7 +324,7 @@ def lti_tool():
     canvas_user_id = request.form.get('custom_canvas_user_id')
 
     roles = request.form['ext_roles']
-    if not "Administrator" in roles and not "Instructor" in roles:
+    if "Administrator" not in roles and "Instructor" not in roles:
         return render_template(
             'error.html',
             message='Must be an Administrator or Instructor',
