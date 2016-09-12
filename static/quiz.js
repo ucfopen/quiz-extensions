@@ -191,17 +191,36 @@ function ajaxSend() {
 				var response = JSON.parse(xhttp.responseText);
 				update_status.innerHTML = "<p>"+ response["message"] + "</p>";
 				if (!response["error"]) {
-					quiz_list = response["quiz_list"];
-					var table_html = "<div id='table_div'><table class='table table-striped table-condensed'><thead><tr><th scope='col'>Quiz Title</th><th scope='col'>Minutes Extended</th></tr></thead><tbody>";
-					for (var x in quiz_list) {
-						table_html += "<tr><td>" +
-							quiz_list[x]["title"] +
-							"</td><td>" +
-							quiz_list[x]["added_time"] +
-							"</td></tr>";
+					var quiz_list = response["quiz_list"];
+					if (quiz_list.length > 0) {
+						update_status.innerHTML += "<h4>Updated</h4>"
+						var table_html = "<div id='table_div'><table class='table table-striped table-condensed'><thead><tr><th scope='col'>Quiz Title</th><th scope='col'>Minutes Extended</th></tr></thead><tbody>";
+						for (var x in quiz_list) {
+							table_html += "<tr><td>" +
+								quiz_list[x]["title"] +
+								"</td><td>" +
+								quiz_list[x]["added_time"] +
+								"</td></tr>";
+						}
+						table_html += "</tbody></table></div>";
+						update_status.innerHTML += table_html;
 					}
-					table_html += "</tbody></table></div>";
-					update_status.innerHTML += table_html;
+					else {
+						update_status.innerHTML += "<p>No Quizzes were found.</p>"
+					}
+
+					var unchanged_quiz_list = response["unchanged_list"];
+					if (unchanged_quiz_list.length > 0) {
+						update_status.innerHTML += "<h4>Unchanged</h4>"
+						var unchanged_table_html = "<div id='table_div'><table class='table table-striped table-condensed'><thead><tr><th scope='col'>Quiz Title</th></tr></thead><tbody>";
+						for (var x in unchanged_quiz_list) {
+							unchanged_table_html += "<tr><td>" +
+								unchanged_quiz_list[x]["title"] +
+								"</td></tr>";
+						}
+						unchanged_table_html += "</tbody></table></div>";
+						update_status.innerHTML += unchanged_table_html;
+					}
 				}
 				clearSelectedStudents();
 				percent_input.value = "";
