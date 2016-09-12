@@ -1,30 +1,26 @@
 from flask import Flask, render_template, session, request, redirect, url_for
-from config import *
 from functools import wraps
 
 import requests
 import json
 import math
-from urlparse import parse_qs, urlsplit
 
 #OAuth specific
 from ims_lti_py import ToolProvider
 from time import time
 
 from models import db, Course, Extension, Quiz, User
+from utils import get_quizzes, search_users, get_user, get_course, get_or_create
+import config
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_DATABASE_URI
+app.config['SQLALCHEMY_DATABASE_URI'] = config.SQLALCHEMY_DATABASE_URI
 
 db.init_app(app)
 
-oauth_creds = {LTI_KEY: LTI_SECRET}
+oauth_creds = {config.LTI_KEY: config.LTI_SECRET}
 
-headers = {'Authorization': 'Bearer ' + API_KEY}
-json_headers = {'Authorization': 'Bearer ' + API_KEY, 'Content-type': 'application/json'}
-
-DEFAULT_PER_PAGE = 10
-MAX_PER_PAGE = 100
+json_headers = {'Authorization': 'Bearer ' + config.API_KEY, 'Content-type': 'application/json'}
 
 
 def check_valid_user(f):
@@ -50,7 +46,7 @@ def check_valid_user(f):
         course_id = int(kwargs.get('course_id'))
 
         if not session['is_admin']:
-            enrollments_url = "%scourses/%s/enrollments" % (API_URL, course_id)
+            enrollments_url = "%scourses/%s/enrollments" % (config.API_URL, course_id)
 
             payload = {
                 'user_id': canvas_user_id,
@@ -89,9 +85,9 @@ def xml():
     """
     return render_template(
         'lti.xml',
-        tool_id=LTI_TOOL_ID,
-        domain=LTI_DOMAIN,
-        launch_url=LTI_LAUNCH_URL
+        tool_id=config.LTI_TOOL_ID,
+        domain=config.LTI_DOMAIN,
+        launch_url=config.LTI_LAUNCH_URL
     )
 
 
@@ -298,7 +294,7 @@ def filter(course_id=None):
 
     query = request.args.get('query', '').lower()
     page = int(request.args.get('page', 1))
-    per_page = int(request.args.get('per_page', DEFAULT_PER_PAGE))
+    per_page = int(request.args.get('per_page', config.DEFAULT_PER_PAGE))
 
     user_list, max_pages = search_users(
         course_id,
@@ -317,101 +313,6 @@ def filter(course_id=None):
         current_page_number=page,
         max_pages=max_pages
     )
-
-
-def get_quizzes(course_id, per_page=MAX_PER_PAGE):
-    """
-    Returns a list of all quizzes in the course.
-    """
-    quizzes = []
-    quizzes_url = "%scourses/%s/quizzes?per_page=%d" % (API_URL, course_id, per_page)
-
-    while True:
-        quizzes_response = requests.get(quizzes_url, headers=headers)
-
-        quizzes_list = quizzes_response.json()
-
-        if 'errors' in quizzes_list:
-            break
-
-        if isinstance(quizzes_list, list):
-            quizzes.extend(quizzes_list)
-        else:
-            quizzes = quizzes_list
-
-        try:
-            quizzes_url = quizzes_response.links['next']['url']
-        except KeyError:
-            break
-
-    return quizzes
-
-
-def search_users(course_id, per_page=DEFAULT_PER_PAGE, page=1, search_term=""):
-    """
-    Searches for students in the course.
-
-    If no search term is provided, all users are returned.
-    """
-    users_url = "%s/courses/%s/search_users?per_page=%s&page=%s" % (
-        API_URL,
-        course_id,
-        per_page,
-        page
-    )
-
-    users_response = requests.get(
-        users_url,
-        data={
-            'search_term': search_term,
-            'enrollment_type': 'student'
-        },
-        headers=headers
-    )
-    user_list = users_response.json()
-
-    if 'errors' in user_list:
-        return [], 0
-
-    num_pages = int(
-        parse_qs(
-            urlsplit(
-                users_response.links['last']['url']
-            ).query
-        )['page'][0]
-    )
-
-    return user_list, num_pages
-
-
-def get_user(user_id):
-    """
-    Get a user from canvas by id.
-
-    :param user_id: ID of a Canvas user.
-    :type user_id: int
-    :rtype: dict
-    :returns: A dictionary representation of a User in Canvas.
-    """
-    response = requests.get(API_URL + 'users/' + user_id, headers=headers)
-    response.raise_for_status()
-
-    return response.json()
-
-
-def get_course(course_id):
-    """
-    Get a course from canvas by id.
-
-    :param course_id: ID of a Canvas course.
-    :type course_id: int
-    :rtype: dict
-    :returns: A dictionary representation of a Course in Canvas.
-    """
-    response = requests.get(API_URL + 'courses/' + course_id, headers=headers)
-    response.raise_for_status()
-
-    return response.json()
 
 
 @app.route('/launch', methods=['POST'])
@@ -485,6 +386,6 @@ def create_db():
     db.create_all()
 
 if __name__ == "__main__":
-    app.debug = DEBUG
-    app.secret_key = SECRET_KEY
-    app.run(host=HOST, ssl_context=SSL_CONTEXT, port=PORT)
+    app.debug = config.DEBUG
+    app.secret_key = config.SECRET_KEY
+    app.run(host=config.HOST, ssl_context=config.SSL_CONTEXT, port=config.PORT)
