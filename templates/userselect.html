@@ -5,7 +5,12 @@
 
 	<div id="container" class="container">
 		<p>This tool will apply extra time to <strong>all existing</strong> quizzes/exams. For example, Suzy Johnson and Stephen Smith need double time. Select the students below and choose the appropriate amount of extra time e.g., double (2x).</p>
-		<p>If additional quizzes/exams are added after, please repeat the process. This will replace any individual existing time extensions.</p>
+		<div id="alerts" class='text-center'>
+			<div id="missing_alert" class='alert alert-danger fade in' role='alert' style="display: none;">
+				<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+				<p>New quizzes available for extensions. <a id="refresh_link" href="{{ url_for('refresh', course_id=course_id) }}">Apply now</a>.</p>
+			</div>
+		</div>
 		<div id="lists" class="row">
 			<div id="users" class="col-xs-6">
 				<div id="form_div">
@@ -69,6 +74,7 @@
 	var course_id = {{ course_id }};
 	var filter_url = "{{ url_for('filter', course_id=course_id) }}";
 	var update_url = "{{ url_for('update', course_id=course_id) }}";
+	var missing_quizzes_url = "{{ url_for('missing_quizzes_check', course_id=course_id) }}";
 </script>
 
 {% endblock %}

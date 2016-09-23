@@ -146,55 +146,42 @@ def update(course_id=None):
     course_json = get_course(course_id)
     course_name = course_json.get('name', '<UNNAMED COURSE>')
 
-    # add/update course in db
-    course = Course.query.filter_by(canvas_id=course_id).first()
-    if course is None:
-        course = Course(course_id, course_name)
-        db.session.add(course)
-    else:
-        course.canvas_id = course_id
-        course.course_name = course_name
-
-    db.session.commit()
-
     user_ids = post_json.get('user_ids', [])
     percent = post_json.get('percent', None)
 
     if not percent:
         return "percent required"
 
-    # add/update users in db
-    for user_id in user_ids:
-        user = User.query.filter_by(canvas_id=user_id).first()
+    course, created = get_or_create(db.session, Course, canvas_id=course_id)
+    course.course_name = course_name
+    db.session.commit()
 
+    for user_id in user_ids:
         try:
             canvas_user = get_user(user_id)
 
             sortable_name = canvas_user.get('sortable_name', '<MISSING NAME>')
-            canvas_user_id = canvas_user.get('id')
             sis_id = canvas_user.get('sis_user_id')
 
         except requests.exceptions.HTTPError:
             # unable to find user
             continue
 
-        if user is None:
-            # create
-            user = User(sortable_name, canvas_user_id, sis_id)
-            db.session.add(user)
-        else:
-            # update
-            user.sortable_name = sortable_name
-            user.canvas_id = canvas_user_id
-            user.sis_id = sis_id
+        user, created = get_or_create(db.session, User, canvas_id=user_id)
+
+        user.sortable_name = sortable_name
+        user.sis_id = sis_id
+
+        db.session.commit()
 
         # create/update extension
-        extension = Extension.query.filter_by(course_id=course_id, user_id=user_id).first()
-        if extension is None:
-            extension = Extension(course_id, user_id, percent)
-            db.session.add(extension)
-        else:
-            extension.percent = percent
+        extension, created = get_or_create(
+            db.session,
+            Extension,
+            course_id=course.id,
+            user_id=user.id
+        )
+        extension.percent = percent
 
         db.session.commit()
 
@@ -213,21 +200,20 @@ def update(course_id=None):
         quiz_id = quiz.get('id', None)
         quiz_title = quiz.get('title', "[UNTITLED QUIZ]")
 
-        # add/update quiz
-        quiz_obj = Quiz.query.filter_by(canvas_id=quiz_id).first()
-        if quiz_obj is None:
-            quiz_obj = Quiz(quiz_id, course_id, quiz_title)
-            db.session.add(quiz_obj)
-        else:
-            quiz_obj.canvas_id = quiz_id
-            quiz_obj.course_id = course_id
-            quiz_obj.title = quiz_title
-
-        db.session.commit()
-
         extension_response = extend_quiz(course_id, quiz, percent, user_ids)
 
         if extension_response.get('success', False) is True:
+            # add/update quiz
+            quiz_obj, created = get_or_create(
+                db.session,
+                Quiz,
+                canvas_id=quiz_id,
+                course_id=course_id
+            )
+            quiz_obj.title = quiz_title
+
+            db.session.commit()
+
             added_time = extension_response.get('added_time', None)
             if added_time is not None:
                 quiz_time_list.append({
@@ -324,26 +310,59 @@ def extend_quiz(course_id, quiz, percent, user_id_list):
         }
 
 
-@app.route("/refresh/<course_id>/2", methods=['POST'])
+@app.route("/refresh/<course_id>/", methods=['POST'])
 def refresh(course_id):
     """
     Look up existing extensions and apply them to new quizzes.
     """
-    course = Course.query.filter_by(canvas_id=course_id).first()
+    course, created = get_or_create(db.session, Course, canvas_id=course_id)
 
-    if course is None:
-        return "Course not found"
-
-    percent_user_map = defaultdict(list)
-    for extension in course.extensions:
-        percent_user_map[extension.percent].append(extension.user_id)
+    try:
+        course_name = get_course(course_id).get('name', '<UNNAMED COURSE>')
+        course.course_name = course_name
+        db.session.commit()
+    except requests.exceptions.HTTPError:
+        return json.dumps({
+            'success': False,
+            'message': 'Course not found'
+        })
 
     # quiz stuff
     quizzes = missing_quizzes(course_id)
 
+    if len(quizzes) < 1:
+        return json.dumps({
+            'success': True,
+            'message': 'No quizzes require updates.'
+        })
+
+    percent_user_map = defaultdict(list)
+    for extension in course.extensions:
+        user_canvas_id = User.query.filter_by(id=extension.user_id).first().canvas_id
+        percent_user_map[extension.percent].append(user_canvas_id)
+
     for quiz in quizzes:
+        quiz_id = quiz.get('id', None)
+        quiz_title = quiz.get('title', "[UNTITLED QUIZ]")
+
         for percent, user_list in percent_user_map.iteritems():
-            extend_quiz(course_id, quiz, percent, user_list)
+            extension_response = extend_quiz(course_id, quiz, percent, user_list)
+
+            if extension_response.get('success', False) is True:
+                quiz_obj = Quiz(quiz_id, course_id, quiz_title)
+                db.session.add(quiz_obj)
+                db.session.commit()
+            else:
+                error_message = extension_response.get('message', '')
+                return json.dumps({
+                    'success': False,
+                    'message': 'Some quizzes couldn\'t be updated. ' + error_message
+                })
+
+    return json.dumps({
+        'success': True,
+        'message': '{} quizzes have been updated.'.format(len(quizzes))
+    })
 
 
 def missing_quizzes(course_id, quickcheck=False):
@@ -364,7 +383,7 @@ def missing_quizzes(course_id, quickcheck=False):
     missing_list = []
 
     for canvas_quiz in quizzes:
-        quiz = Quiz.query.filter_by(canvas_id=canvas_quiz.id).first()
+        quiz = Quiz.query.filter_by(canvas_id=canvas_quiz.get('id')).first()
 
         if quiz:
             # Already exists. Next!
@@ -377,6 +396,26 @@ def missing_quizzes(course_id, quickcheck=False):
             break
 
     return missing_list
+
+
+@app.route("/missing_quizzes/<course_id>/", methods=['GET'])
+def missing_quizzes_check(course_id):
+    """
+    Check if there are missing quizzes.
+
+    :param course_id: The Canvas ID of the Course.
+    :type course_id: int
+    :rtype: str
+    :returns: A JSON-style string representation of a boolean. "true" if there
+        are missing quizzes, "false" if there are not.
+    """
+    num_extensions = Extension.query.filter_by(course_id=course_id).count()
+    if num_extensions == 0:
+        # There are no extensions for this course yet. No need to update.
+        return 'false'
+
+    missing = len(missing_quizzes(course_id, True)) > 0
+    return json.dumps(missing)
 
 
 @app.route("/filter/<course_id>/", methods=['GET'])
@@ -445,7 +484,6 @@ def lti_tool():
             )
     else:
         return render_template('error.html', message='No consumer key')
-
     if not tool_provider.is_valid_request(request):
         return render_template(
             'error.html',
