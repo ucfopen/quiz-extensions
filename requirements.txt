@@ -1,5 +1,6 @@
 decorator==4.0.2
-Flask==0.10.1
+Flask==0.11.1
+Flask-SQLAlchemy==2.1
 httplib2==0.9.1
 ipdb==0.8.1
 ipython==4.0.0
@@ -14,6 +15,7 @@ pexpect==3.3
 pickleshare==0.5
 requests==2.7.0
 simplegeneric==0.8.1
+SQLAlchemy==1.0.15
 traitlets==4.0.0
 Werkzeug==0.10.4
 wheel==0.24.0

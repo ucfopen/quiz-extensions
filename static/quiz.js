@@ -4,6 +4,7 @@ var selected_user_list = document.getElementById("selected_user_list");
 var user_list = document.getElementById("user_list");
 var user_list_div = document.getElementById("user_list_div");
 var percent_added_span = document.getElementById("modal_percent_added");
+var missing_alert = document.getElementById('missing_alert');
 var modal_selected_user_list = document.getElementById("modal_selected_user_list");
 var percent_form = document.getElementById("percent_form");
 var percent_select = document.getElementById("percent_select");
@@ -114,6 +115,39 @@ submit_button.addEventListener('click', function(e) {
 	ajaxSend();
 });
 
+document.getElementById('refresh_link').addEventListener('click', function(e) {
+	e.preventDefault();
+
+	var refresh_url = e.target.getAttribute('href');
+
+	var xhttp = new XMLHttpRequest();
+
+	xhttp.onreadystatechange = function() {
+		if (xhttp.readyState == 4) {
+			var alerts_div = document.getElementById('alerts');
+
+			var response = JSON.parse(xhttp.responseText);
+
+			var alert = document.createElement('div');
+			var close_alert_text = '<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>'
+			alert.innerHTML = close_alert_text + "<p>" + response['message'] + "</p>";
+
+			if (xhttp.status == 200 && response['success'] == true) {
+				missing_alert.style.display = "none";
+				alert.className = 'alert alert-success fade in';
+			}
+			else {
+				missing_alert.style.display = "";
+				alert.className = 'alert alert-danger fade in';
+			}
+
+			alerts_div.appendChild(alert);
+		}
+	};
+	xhttp.open("POST", refresh_url, true);
+	xhttp.send();
+});
+
 $("#go_modal").on('hidden.bs.modal', function(e) {
 	percent_form.style.display = "";
 	update_status.style.display = "none";
@@ -122,8 +156,15 @@ $("#go_modal").on('hidden.bs.modal', function(e) {
 function clearSelectedStudents() {
 	var num_selected_users = selected_user_list.children.length;
 
-	for (i=0; i<num_selected_users; i++) {
+	while (selected_user_list.children.length > 0) {
 		selected_user_list.children[0].click();
+	}
+}
+
+function clearAlerts() {
+	var alerts_div = document.getElementById('alerts');
+	while(alerts_div.children.length > 0) {
+		alerts_div.removeChild(alerts_div.children[0]);
 	}
 }
 
@@ -191,19 +232,39 @@ function ajaxSend() {
 				var response = JSON.parse(xhttp.responseText);
 				update_status.innerHTML = "<p>"+ response["message"] + "</p>";
 				if (!response["error"]) {
-					quiz_list = response["quiz_list"];
-					var table_html = "<div id='table_div'><table class='table table-striped table-condensed'><thead><tr><th scope='col'>Quiz Title</th><th scope='col'>Minutes Extended</th></tr></thead><tbody>";
-					for (var x in quiz_list) {
-						table_html += "<tr><td>" +
-							quiz_list[x]["title"] +
-							"</td><td>" +
-							quiz_list[x]["added_time"] +
-							"</td></tr>";
+					var quiz_list = response["quiz_list"];
+					if (quiz_list.length > 0) {
+						update_status.innerHTML += "<h4>Updated</h4>"
+						var table_html = "<div id='table_div'><table class='table table-striped table-condensed'><thead><tr><th scope='col'>Quiz Title</th><th scope='col'>Minutes Extended</th></tr></thead><tbody>";
+						for (var x in quiz_list) {
+							table_html += "<tr><td>" +
+								quiz_list[x]["title"] +
+								"</td><td>" +
+								quiz_list[x]["added_time"] +
+								"</td></tr>";
+						}
+						table_html += "</tbody></table></div>";
+						update_status.innerHTML += table_html;
 					}
-					table_html += "</tbody></table></div>";
-					update_status.innerHTML += table_html;
+					else {
+						update_status.innerHTML += "<p>No Quizzes were found.</p>"
+					}
+
+					var unchanged_quiz_list = response["unchanged_list"];
+					if (unchanged_quiz_list.length > 0) {
+						update_status.innerHTML += "<h4>Unchanged</h4>"
+						var unchanged_table_html = "<div id='table_div'><table class='table table-striped table-condensed'><thead><tr><th scope='col'>Quiz Title</th></tr></thead><tbody>";
+						for (var x in unchanged_quiz_list) {
+							unchanged_table_html += "<tr><td>" +
+								unchanged_quiz_list[x]["title"] +
+								"</td></tr>";
+						}
+						unchanged_table_html += "</tbody></table></div>";
+						update_status.innerHTML += unchanged_table_html;
+					}
 				}
 				clearSelectedStudents();
+				clearAlerts();
 				percent_input.value = "";
 			}
 			else {
@@ -262,5 +323,31 @@ function checkIfEmpty() {
 	}
 }
 
-// load initial user list
-window.onload = ajaxFilter('', 1, update_user_list);
+function ajax_check_missing_quizzes(course_id) {
+	var xhttp = new XMLHttpRequest();
+
+	xhttp.onreadystatechange = function() {
+		if (xhttp.readyState == 4 && xhttp.status == 200) {
+			var response = JSON.parse(xhttp.responseText);
+
+			if (response) {
+				missing_alert.style.display = "";
+			}
+			else {
+				missing_alert.style.display = "none";
+			}
+		}
+	};
+	xhttp.open("GET", missing_quizzes_url, true);
+	xhttp.send();
+}
+
+function load_func() {
+	// load initial user list
+	ajaxFilter('', 1, update_user_list);
+
+	// check for missing quizzes
+	ajax_check_missing_quizzes(course_id);
+}
+
+window.onload = load_func;

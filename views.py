@@ -1,25 +1,29 @@
-from flask import Flask, render_template, session, request, redirect, url_for
-from config import *
+from flask import Flask, render_template, session, request, redirect, url_for, Response
 from functools import wraps
 
+from collections import defaultdict
 import requests
 import json
-import math
-from urlparse import parse_qs, urlsplit
 
-#OAuth specific
+# OAuth specific
 from ims_lti_py import ToolProvider
 from time import time
 
+from models import db, Course, Extension, Quiz, User
+from utils import (
+    extend_quiz, get_course, get_or_create, get_quizzes, get_user,
+    missing_quizzes, search_students
+)
+import config
+
 app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = config.SQLALCHEMY_DATABASE_URI
 
-oauth_creds = {LTI_KEY: LTI_SECRET}
+db.init_app(app)
 
-headers = {'Authorization': 'Bearer ' + API_KEY}
-json_headers = {'Authorization': 'Bearer ' + API_KEY, 'Content-type': 'application/json'}
+oauth_creds = {config.LTI_KEY: config.LTI_SECRET}
 
-DEFAULT_PER_PAGE = 10
-MAX_PER_PAGE = 100
+json_headers = {'Authorization': 'Bearer ' + config.API_KEY, 'Content-type': 'application/json'}
 
 
 def check_valid_user(f):
@@ -37,7 +41,7 @@ def check_valid_user(f):
                 'error.html',
                 message='Not allowed!'
             )
-        if not 'course_id' in kwargs.keys():
+        if 'course_id' not in kwargs.keys():
             return render_template(
                 'error.html',
                 message='No course_id provided.'
@@ -45,7 +49,7 @@ def check_valid_user(f):
         course_id = int(kwargs.get('course_id'))
 
         if not session['is_admin']:
-            enrollments_url = "%scourses/%s/enrollments" % (API_URL, course_id)
+            enrollments_url = "%scourses/%s/enrollments" % (config.API_URL, course_id)
 
             payload = {
                 'user_id': canvas_user_id,
@@ -82,11 +86,14 @@ def xml():
     """
     Returns the lti.xml file for the app.
     """
-    return render_template(
-        'lti.xml',
-        tool_id=LTI_TOOL_ID,
-        domain=LTI_DOMAIN,
-        launch_url=LTI_LAUNCH_URL
+    return Response(
+        render_template(
+            'lti.xml',
+            tool_id=config.LTI_TOOL_ID,
+            domain=config.LTI_DOMAIN,
+            launch_url=config.LTI_LAUNCH_URL,
+        ),
+        mimetype='application/xml'
     )
 
 
@@ -136,20 +143,69 @@ def update(course_id=None):
     if not course_id:
         return "course_id required"
 
-    course_url = "%scourses/%s" % (API_URL, course_id)
-
     post_json = request.get_json()
 
     if not post_json:
         return "invalid request"
 
+    course_json = get_course(course_id)
+    course_name = course_json.get('name', '<UNNAMED COURSE>')
+
     user_ids = post_json.get('user_ids', [])
     percent = post_json.get('percent', None)
 
-    quizzes = get_quizzes(course_url)
+    if not percent:
+        return "percent required"
+
+    if len(missing_quizzes(course_id, True)) > 0:
+        # Some quizzes are missing. Refresh first.
+        refresh_status = json.loads(refresh(course_id))
+        if refresh_status.get('success', False) is False:
+            return json.dumps({
+                "error": True,
+                "message": refresh_status.get(
+                    'message',
+                    "Detected missing courses. Attempted to update, but an unknown error occured."
+                )
+            })
+
+    course, created = get_or_create(db.session, Course, canvas_id=course_id)
+    course.course_name = course_name
+    db.session.commit()
+
+    for user_id in user_ids:
+        try:
+            canvas_user = get_user(user_id)
+
+            sortable_name = canvas_user.get('sortable_name', '<MISSING NAME>')
+            sis_id = canvas_user.get('sis_user_id')
+
+        except requests.exceptions.HTTPError:
+            # unable to find user
+            continue
+
+        user, created = get_or_create(db.session, User, canvas_id=user_id)
+
+        user.sortable_name = sortable_name
+        user.sis_id = sis_id
+
+        db.session.commit()
+
+        # create/update extension
+        extension, created = get_or_create(
+            db.session,
+            Extension,
+            course_id=course.id,
+            user_id=user.id
+        )
+        extension.percent = percent
+
+        db.session.commit()
+
+    quizzes = get_quizzes(course_id)
     num_quizzes = len(quizzes)
-    num_changed_quizzes = 0
     quiz_time_list = []
+    unchanged_quiz_time_list = []
 
     if num_quizzes < 1:
         return json.dumps({
@@ -161,82 +217,161 @@ def update(course_id=None):
         quiz_id = quiz.get('id', None)
         quiz_title = quiz.get('title', "[UNTITLED QUIZ]")
 
-        time_limit = quiz.get('time_limit', None)
+        extension_response = extend_quiz(course_id, quiz, percent, user_ids)
 
-        if time_limit is None or time_limit < 1:
-            # Quiz has no time limit so there is no time to add.
-            continue
+        if extension_response.get('success', False) is True:
+            # add/update quiz
+            quiz_obj, created = get_or_create(
+                db.session,
+                Quiz,
+                canvas_id=quiz_id,
+                course_id=course_id
+            )
+            quiz_obj.title = quiz_title
 
-        added_time = math.ceil(time_limit * ((float(percent)-100) / 100) if percent else 0)
-        quiz_time_list.append(
-            {
-                "title": quiz_title,
-                "added_time": added_time
-            }
-        )
+            db.session.commit()
 
-        quiz_extensions = {
-            'quiz_extensions': []
-        }
-
-        for user_id in user_ids:
-            user_extension = {
-                'user_id': user_id,
-                'extra_time': added_time
-            }
-            quiz_extensions['quiz_extensions'].append(user_extension)
-
-        extensions_response = requests.post(
-            "%s/quizzes/%s/extensions" % (course_url, quiz_id),
-            data=json.dumps(quiz_extensions),
-            headers=json_headers
-        )
-
-        if extensions_response.status_code != 200:
+            added_time = extension_response.get('added_time', None)
+            if added_time is not None:
+                quiz_time_list.append({
+                    "title": quiz_title,
+                    "added_time": added_time
+                })
+            else:
+                unchanged_quiz_time_list.append({"title": quiz_title})
+        else:
             return json.dumps({
-                "error": True,
-                "message": "Something went wrong. Status code %s" % (
-                    extensions_response.status_code
-                )
+                'error': True,
+                'message': extension_response.get('message', 'An unknown error occured')
             })
-        num_changed_quizzes += 1
 
-    num_unchanged_quizzes = num_quizzes - num_changed_quizzes
+    msg_str = (
+        'Success! {} {} been updated for {} student(s) to have {}% time. '
+        '{} {} no time limit and were left unchanged.'
+    )
 
-    message = "Success! %s %s been updated for %s student(s) to have %s%% time. \
-        %s %s no time limit and were left unchanged." % (
-        num_changed_quizzes,
-        "quizzes have" if num_changed_quizzes != 1 else "quiz has",
+    message = msg_str.format(
+        len(quiz_time_list),
+        "quizzes have" if len(quiz_time_list) != 1 else "quiz has",
         len(user_ids),
         percent,
-        num_unchanged_quizzes,
-        "quizzes have" if num_unchanged_quizzes != 1 else "quiz has"
+        len(unchanged_quiz_time_list),
+        "quizzes have" if len(unchanged_quiz_time_list) != 1 else "quiz has"
     )
 
     return json.dumps({
         "error": False,
         "message": message,
-        "quiz_list": quiz_time_list
+        "quiz_list": quiz_time_list,
+        "unchanged_list": unchanged_quiz_time_list
     })
+
+
+@app.route("/refresh/<course_id>/", methods=['POST'])
+def refresh(course_id):
+    """
+    Look up existing extensions and apply them to new quizzes.
+
+    :param course_id: The Canvas ID of the Course.
+    :type course_id: int
+    :rtype: str
+    :returns: A JSON-formatted string representation of an object
+        containing two parts:
+
+        - success `bool` false if there was an error, true otherwise.
+        - message `str` A long description of success or failure.
+    """
+    course, created = get_or_create(db.session, Course, canvas_id=course_id)
+
+    try:
+        course_name = get_course(course_id).get('name', '<UNNAMED COURSE>')
+        course.course_name = course_name
+        db.session.commit()
+    except requests.exceptions.HTTPError:
+        return json.dumps({
+            'success': False,
+            'message': 'Course not found'
+        })
+
+    # quiz stuff
+    quizzes = missing_quizzes(course_id)
+
+    if len(quizzes) < 1:
+        return json.dumps({
+            'success': True,
+            'message': 'No quizzes require updates.'
+        })
+
+    percent_user_map = defaultdict(list)
+    for extension in course.extensions:
+        user_canvas_id = User.query.filter_by(id=extension.user_id).first().canvas_id
+        percent_user_map[extension.percent].append(user_canvas_id)
+
+    for quiz in quizzes:
+        quiz_id = quiz.get('id', None)
+        quiz_title = quiz.get('title', "[UNTITLED QUIZ]")
+
+        for percent, user_list in percent_user_map.iteritems():
+            extension_response = extend_quiz(course_id, quiz, percent, user_list)
+
+            if extension_response.get('success', False) is True:
+                quiz_obj = Quiz(quiz_id, course_id, quiz_title)
+                db.session.add(quiz_obj)
+                db.session.commit()
+            else:
+                error_message = extension_response.get('message', '')
+                return json.dumps({
+                    'success': False,
+                    'message': 'Some quizzes couldn\'t be updated. ' + error_message
+                })
+
+    return json.dumps({
+        'success': True,
+        'message': '{} quizzes have been updated.'.format(len(quizzes))
+    })
+
+
+@app.route("/missing_quizzes/<course_id>/", methods=['GET'])
+def missing_quizzes_check(course_id):
+    """
+    Check if there are missing quizzes.
+
+    :param course_id: The Canvas ID of the Course.
+    :type course_id: int
+    :rtype: str
+    :returns: A JSON-formatted string representation of a boolean.
+        "true" if there are missing quizzes, "false" if there are not.
+    """
+    num_extensions = Extension.query.filter_by(course_id=course_id).count()
+    if num_extensions == 0:
+        # There are no extensions for this course yet. No need to update.
+        return 'false'
+
+    missing = len(missing_quizzes(course_id, True)) > 0
+    return json.dumps(missing)
 
 
 @app.route("/filter/<course_id>/", methods=['GET'])
 @check_valid_user
 def filter(course_id=None):
     """
-    Displays a filtered and paginated list of students in the course.
+    Display a filtered and paginated list of students in the course.
+
+    :param course_id:
+    :type: int
+    :rtype: str
+    :returns: A list of students in the course using the template
+        user_list.html.
     """
     if not course_id:
         return "course_id required"
 
-    course_url = "%scourses/%s" % (API_URL, course_id)
-
     query = request.args.get('query', '').lower()
     page = int(request.args.get('page', 1))
-    per_page = int(request.args.get('per_page', DEFAULT_PER_PAGE))
+    per_page = int(request.args.get('per_page', config.DEFAULT_PER_PAGE))
 
-    user_list, max_pages = search_users(
-        course_url,
+    user_list, max_pages = search_students(
+        course_id,
         per_page=per_page,
         page=page,
         search_term=query
@@ -254,70 +389,6 @@ def filter(course_id=None):
     )
 
 
-def get_quizzes(course_url, per_page=MAX_PER_PAGE):
-    """
-    Returns a list of all quizzes in the course.
-    """
-    quizzes = []
-    quizzes_url = "%s/quizzes?per_page=%d" % (course_url, per_page)
-
-    while True:
-        quizzes_response = requests.get(quizzes_url, headers=headers)
-
-        quizzes_list = quizzes_response.json()
-
-        if 'errors' in quizzes_list:
-            break
-
-        if isinstance(quizzes_list, list):
-            quizzes.extend(quizzes_list)
-        else:
-            quizzes = quizzes_list
-
-        try:
-            quizzes_url = quizzes_response.links['next']['url']
-        except KeyError:
-            break
-
-    return quizzes
-
-
-def search_users(course_url, per_page=DEFAULT_PER_PAGE, page=1, search_term=""):
-    """
-    Searches for students in the course.
-
-    If no search term is provided, all users are returned.
-    """
-    users_url = "%s/search_users?per_page=%s&page=%s" % (
-        course_url,
-        per_page,
-        page
-    )
-
-    users_response = requests.get(
-        users_url,
-        data={
-            'search_term': search_term,
-            'enrollment_type': 'student'
-        },
-        headers=headers
-    )
-    user_list = users_response.json()
-
-    if 'errors' in user_list:
-        return [], 0
-
-    num_pages = int(
-        parse_qs(
-            urlsplit(
-                users_response.links['last']['url']
-            ).query
-        )['page'][0]
-    )
-
-    return user_list, num_pages
-
-
 @app.route('/launch', methods=['POST'])
 def lti_tool():
     """
@@ -327,7 +398,7 @@ def lti_tool():
     canvas_user_id = request.form.get('custom_canvas_user_id')
 
     roles = request.form['ext_roles']
-    if not "Administrator" in roles and not "Instructor" in roles:
+    if "Administrator" not in roles and "Instructor" not in roles:
         return render_template(
             'error.html',
             message='Must be an Administrator or Instructor',
@@ -352,7 +423,6 @@ def lti_tool():
             )
     else:
         return render_template('error.html', message='No consumer key')
-
     if not tool_provider.is_valid_request(request):
         return render_template(
             'error.html',
@@ -383,7 +453,12 @@ def lti_tool():
 def was_nonce_used_in_last_x_minutes(nonce, minutes):
     return False
 
+
+@app.before_first_request
+def create_db():
+    db.create_all()
+
 if __name__ == "__main__":
-    app.debug = DEBUG
-    app.secret_key = SECRET_KEY
-    app.run(host=HOST, ssl_context=SSL_CONTEXT, port=PORT)
+    app.debug = config.DEBUG
+    app.secret_key = config.SECRET_KEY
+    app.run(host=config.HOST, ssl_context=config.SSL_CONTEXT, port=config.PORT)
