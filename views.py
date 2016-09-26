@@ -152,6 +152,18 @@ def update(course_id=None):
     if not percent:
         return "percent required"
 
+    if len(missing_quizzes(course_id, True)) > 0:
+        # Some quizzes are missing. Refresh first.
+        refresh_status = json.loads(refresh(course_id))
+        if refresh_status.get('success', False) is False:
+            return json.dumps({
+                "error": True,
+                "message": refresh_status.get(
+                    'message',
+                    "Detected missing courses. Attempted to update, but an unknown error occured."
+                )
+            })
+
     course, created = get_or_create(db.session, Course, canvas_id=course_id)
     course.course_name = course_name
     db.session.commit()
