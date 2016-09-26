@@ -14,6 +14,8 @@ json_headers = {'Authorization': 'Bearer ' + config.API_KEY, 'Content-type': 'ap
 
 def extend_quiz(course_id, quiz, percent, user_id_list):
     """
+    Extends a quiz time by a percentage for a list of users.
+
     :param quiz: A quiz object from Canvas
     :type quiz: dict
     :param percent: The percent of original quiz time to be applied.
@@ -23,6 +25,7 @@ def extend_quiz(course_id, quiz, percent, user_id_list):
     :type user_id_list: list
     :rtype: dict
     :returns: A dictionary with three parts:
+
         - success `bool` False if there was an error, True otherwise.
         - message `str` A long description of success or failure.
         - added_time `int` The amount of time added in minutes. Returns
@@ -74,7 +77,14 @@ def extend_quiz(course_id, quiz, percent, user_id_list):
 
 def get_quizzes(course_id, per_page=config.MAX_PER_PAGE):
     """
-    Returns a list of all quizzes in the course.
+    Get all quizzes in a Canvas course.
+
+    :param course_id: The Canvas ID of a Course
+    :type course_id: int
+    :param per_page: The number of quizzes to get per page.
+    :type per_page: int
+    :rtype: list
+    :returns: A list of dictionaries representing Canvas Quiz objects.
     """
     quizzes = []
     quizzes_url = "%scourses/%s/quizzes?per_page=%d" % (config.API_URL, course_id, per_page)
@@ -100,11 +110,20 @@ def get_quizzes(course_id, per_page=config.MAX_PER_PAGE):
     return quizzes
 
 
-def search_users(course_id, per_page=config.DEFAULT_PER_PAGE, page=1, search_term=""):
+def search_students(course_id, per_page=config.DEFAULT_PER_PAGE, page=1, search_term=""):
     """
-    Searches for students in the course.
+    Search for students in the course.
 
     If no search term is provided, all users are returned.
+
+    :param course_id: The Canvas ID of a Course.
+    :type course_id: int
+    :param per_page: The number of students to get
+    :type per_page: int
+    :param page: The page number to get
+    :type page: int
+    :param search_term: A string to filter students by
+    :type search_term: str
     """
     users_url = "%s/courses/%s/search_users?per_page=%s&page=%s" % (
         config.API_URL,
@@ -170,6 +189,11 @@ def get_course(course_id):
 def get_or_create(session, model, **kwargs):
     """
     Simple version of Django's get_or_create for interacting with Models
+
+    :param session: SQLAlchemy database session
+    :type session: :class:`sqlalchemy.orm.scoping.scoped_session`
+    :param model: The model to get or create from.
+    :type model: :class:`flask_sqlalchemy.Model`
     """
     instance = session.query(model).filter_by(**kwargs).first()
     if instance:

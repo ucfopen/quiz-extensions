@@ -1,4 +1,4 @@
-from flask import Flask, render_template, session, request, redirect, url_for
+from flask import Flask, render_template, session, request, redirect, url_for, Response
 from functools import wraps
 
 from collections import defaultdict
@@ -12,7 +12,7 @@ from time import time
 from models import db, Course, Extension, Quiz, User
 from utils import (
     extend_quiz, get_course, get_or_create, get_quizzes, get_user,
-    missing_quizzes, search_users
+    missing_quizzes, search_students
 )
 import config
 
@@ -86,11 +86,14 @@ def xml():
     """
     Returns the lti.xml file for the app.
     """
-    return render_template(
-        'lti.xml',
-        tool_id=config.LTI_TOOL_ID,
-        domain=config.LTI_DOMAIN,
-        launch_url=config.LTI_LAUNCH_URL
+    return Response(
+        render_template(
+            'lti.xml',
+            tool_id=config.LTI_TOOL_ID,
+            domain=config.LTI_DOMAIN,
+            launch_url=config.LTI_LAUNCH_URL,
+        ),
+        mimetype='application/xml'
     )
 
 
@@ -268,6 +271,15 @@ def update(course_id=None):
 def refresh(course_id):
     """
     Look up existing extensions and apply them to new quizzes.
+
+    :param course_id: The Canvas ID of the Course.
+    :type course_id: int
+    :rtype: str
+    :returns: A JSON-formatted string representation of an object
+        containing two parts:
+
+        - success `bool` false if there was an error, true otherwise.
+        - message `str` A long description of success or failure.
     """
     course, created = get_or_create(db.session, Course, canvas_id=course_id)
 
@@ -327,8 +339,8 @@ def missing_quizzes_check(course_id):
     :param course_id: The Canvas ID of the Course.
     :type course_id: int
     :rtype: str
-    :returns: A JSON-style string representation of a boolean. "true" if there
-        are missing quizzes, "false" if there are not.
+    :returns: A JSON-formatted string representation of a boolean.
+        "true" if there are missing quizzes, "false" if there are not.
     """
     num_extensions = Extension.query.filter_by(course_id=course_id).count()
     if num_extensions == 0:
@@ -343,7 +355,13 @@ def missing_quizzes_check(course_id):
 @check_valid_user
 def filter(course_id=None):
     """
-    Displays a filtered and paginated list of students in the course.
+    Display a filtered and paginated list of students in the course.
+
+    :param course_id:
+    :type: int
+    :rtype: str
+    :returns: A list of students in the course using the template
+        user_list.html.
     """
     if not course_id:
         return "course_id required"
@@ -352,7 +370,7 @@ def filter(course_id=None):
     page = int(request.args.get('page', 1))
     per_page = int(request.args.get('per_page', config.DEFAULT_PER_PAGE))
 
-    user_list, max_pages = search_users(
+    user_list, max_pages = search_students(
         course_id,
         per_page=per_page,
         page=page,
