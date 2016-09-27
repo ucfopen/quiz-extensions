@@ -19,3 +19,5 @@ LTI_SECRET = ''  # Shared Secret
 LTI_TOOL_ID = ''  # A unique ID for the tool
 LTI_DOMAIN = ''  # Domain hosting the LTI
 LTI_LAUNCH_URL = ''  # Launch URL for the LTI, This should match the url for `lti_tool` in views.py (e.g. 'http://example.com/launch')
+
+SQLALCHEMY_DATABASE_URI = ''  # URI for database
