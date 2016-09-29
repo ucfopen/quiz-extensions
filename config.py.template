@@ -1,8 +1,5 @@
 DEBUG = False  # Leave False on production
 
-HOST = ''  # The IP/URL to run the server on
-PORT = 5000  # The port to run the server on. Must be an integer
-
 API_URL = ''  # Canvas API URL (e.g. 'http://example.com/api/v1/')
 API_KEY = ''  # Canvas API Key
 

@@ -9,7 +9,7 @@
         <lticm:options name="course_navigation">
             <lticm:property name="enabled">true</lticm:property>
 
-            <lticm:property name="url">{{ launch_url }}</lticm:property>
+            <lticm:property name="url">{{ url_for('lti_tool', _external=True) }}</lticm:property>
             <lticm:property name="visibility">admins</lticm:property>
         </lticm:options>
         <lticm:property name="icon_url"></lticm:property>

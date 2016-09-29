@@ -85,17 +85,19 @@ def index():
     return "Please contact your System Administrator."
 
 
-@app.route("/xml/", methods=['POST', 'GET'])
+@app.route("/lti.xml", methods=['GET'])
 def xml():
     """
     Returns the lti.xml file for the app.
     """
+    from urlparse import urlparse
+    domain = urlparse(request.url_root).netloc
+
     return Response(
         render_template(
             'lti.xml',
             tool_id=config.LTI_TOOL_ID,
-            domain=config.LTI_DOMAIN,
-            launch_url=config.LTI_LAUNCH_URL,
+            domain=domain,
         ),
         mimetype='application/xml'
     )
