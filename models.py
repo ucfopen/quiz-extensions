@@ -33,7 +33,7 @@ class User(db.Model):
 class Course(db.Model):
     __tablename__ = 'course'
     id = db.Column(db.Integer, primary_key=True)
-    canvas_id = db.Column(db.Integer)
+    canvas_id = db.Column(db.Integer, unique=True)
     course_name = db.Column(db.String(250))
     created_date = db.Column(db.DateTime, server_default=db.func.now())
     extensions = db.relationship(
@@ -63,7 +63,7 @@ class Course(db.Model):
 class Extension(db.Model):
     __tablename__ = 'extension'
     id = db.Column(db.Integer, primary_key=True)
-    course_id = db.Column(db.Integer, db.ForeignKey('course.canvas_id'))
+    course_id = db.Column(db.Integer, db.ForeignKey('course.id'))
     created_date = db.Column(db.DateTime, server_default=db.func.now())
     last_updated_date = db.Column(
         db.DateTime,
@@ -71,7 +71,7 @@ class Extension(db.Model):
         onupdate=db.func.now()
     )
     percent = db.Column(db.Integer)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.canvas_id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     __table_args__ = (
         db.CheckConstraint(percent >= 100, name='check_percent_greater_than_100'),
     )
@@ -85,8 +85,8 @@ class Extension(db.Model):
 class Quiz(db.Model):
     __tablename__ = 'quiz'
     id = db.Column(db.Integer, primary_key=True)
-    canvas_id = db.Column(db.Integer)
-    course_id = db.Column(db.Integer, db.ForeignKey('course.canvas_id'))
+    canvas_id = db.Column(db.Integer, unique=True)
+    course_id = db.Column(db.Integer, db.ForeignKey('course.id'))
     created_date = db.Column(db.DateTime, server_default=db.func.now())
     last_updated_date = db.Column(
         db.DateTime,

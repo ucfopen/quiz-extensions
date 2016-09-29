@@ -1,4 +1,5 @@
 from flask import Flask, render_template, session, request, redirect, url_for, Response
+from flask_migrate import Migrate
 from functools import wraps
 
 from collections import defaultdict
@@ -18,8 +19,11 @@ import config
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = config.SQLALCHEMY_DATABASE_URI
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = config.SQLALCHEMY_TRACK_MODIFICATIONS
+app.secret_key = config.SECRET_KEY
 
 db.init_app(app)
+migrate = Migrate(app, db)
 
 oauth_creds = {config.LTI_KEY: config.LTI_SECRET}
 
@@ -225,7 +229,7 @@ def update(course_id=None):
                 db.session,
                 Quiz,
                 canvas_id=quiz_id,
-                course_id=course_id
+                course_id=course.id
             )
             quiz_obj.title = quiz_title
 
@@ -315,7 +319,7 @@ def refresh(course_id):
             extension_response = extend_quiz(course_id, quiz, percent, user_list)
 
             if extension_response.get('success', False) is True:
-                quiz_obj = Quiz(quiz_id, course_id, quiz_title)
+                quiz_obj = Quiz(quiz_id, course.id, quiz_title)
                 db.session.add(quiz_obj)
                 db.session.commit()
             else:
@@ -342,7 +346,12 @@ def missing_quizzes_check(course_id):
     :returns: A JSON-formatted string representation of a boolean.
         "true" if there are missing quizzes, "false" if there are not.
     """
-    num_extensions = Extension.query.filter_by(course_id=course_id).count()
+    course = Course.query.filter_by(canvas_id=course_id).first()
+    if course is None:
+        # No record of this course. No need to update yet.
+        return "false"
+
+    num_extensions = Extension.query.filter_by(course_id=course.id).count()
     if num_extensions == 0:
         # There are no extensions for this course yet. No need to update.
         return 'false'
@@ -452,13 +461,3 @@ def lti_tool():
 
 def was_nonce_used_in_last_x_minutes(nonce, minutes):
     return False
-
-
-@app.before_first_request
-def create_db():
-    db.create_all()
-
-if __name__ == "__main__":
-    app.debug = config.DEBUG
-    app.secret_key = config.SECRET_KEY
-    app.run(host=config.HOST, ssl_context=config.SSL_CONTEXT, port=config.PORT)
