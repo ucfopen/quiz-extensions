@@ -274,6 +274,7 @@ def update(course_id=None):
 
 
 @app.route("/refresh/<course_id>/", methods=['POST'])
+@check_valid_user
 def refresh(course_id):
     """
     Look up existing extensions and apply them to new quizzes.
