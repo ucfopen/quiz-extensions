@@ -68,9 +68,10 @@ def check_valid_user(f):
             user_enrollments = user_enrollments_response.json()
 
             if not user_enrollments or 'errors' in user_enrollments:
+                message = 'You are not enrolled in this course as a Teacher, TA, or Designer.'
                 return render_template(
                     'error.html',
-                    message='You are not enrolled in this course as a Teacher, TA, or Designer.'
+                    message=message
                 )
 
         return f(*args, **kwargs)
@@ -165,13 +166,20 @@ def update(course_id=None):
 
     if len(missing_quizzes(course_id, True)) > 0:
         # Some quizzes are missing. Refresh first.
-        refresh_status = json.loads(refresh(course_id))
+        try:
+            refresh_status = json.loads(refresh(course_id=course_id))
+        except ValueError:
+            return json.dumps({
+                "error": True,
+                "message": "Error refreshing quizzes."
+            })
+
         if refresh_status.get('success', False) is False:
             return json.dumps({
                 "error": True,
                 "message": refresh_status.get(
                     'message',
-                    "Detected missing courses. Attempted to update, but an unknown error occured."
+                    "Detected missing quizzes. Attempted to update, but an unknown error occured."
                 )
             })
 
@@ -275,7 +283,7 @@ def update(course_id=None):
 
 @app.route("/refresh/<course_id>/", methods=['POST'])
 @check_valid_user
-def refresh(course_id):
+def refresh(course_id=None):
     """
     Look up existing extensions and apply them to new quizzes.
 
