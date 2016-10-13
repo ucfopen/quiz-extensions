@@ -125,21 +125,29 @@ def search_students(course_id, per_page=config.DEFAULT_PER_PAGE, page=1, search_
     :param search_term: A string to filter students by
     :type search_term: str
     """
-    users_url = "%s/courses/%s/search_users?per_page=%s&page=%s" % (
+    users_url = "%s/courses/%s/search_users?per_page=%s&page=%s&access_token=%s" % (
         config.API_URL,
         course_id,
         per_page,
-        page
+        page,
+        config.API_KEY
     )
+    print users_url
+    try:
+        users_response = requests.get(
+            users_url,
+            # data={
+            #     'search_term': search_term,
+            #     'enrollment_type': 'student'
+            # },
+            # headers=headers,
+            timeout=10.0
+        )
+    except requests.Timeout:
+        print "timeout"
+        return [], 0
 
-    users_response = requests.get(
-        users_url,
-        data={
-            'search_term': search_term,
-            'enrollment_type': 'student'
-        },
-        headers=headers
-    )
+    print "we did it!"
     user_list = users_response.json()
 
     if 'errors' in user_list:

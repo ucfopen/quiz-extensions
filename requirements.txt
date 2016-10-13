@@ -10,6 +10,7 @@ itsdangerous==0.24
 Jinja2==2.8
 lxml==3.4.4
 MarkupSafe==0.23
+MySQL-python==1.2.5
 oauth2==1.9.0.post1
 path.py==8.1.1
 pexpect==3.3
@@ -20,4 +21,4 @@ SQLAlchemy==1.0.15
 traitlets==4.0.0
 Werkzeug==0.10.4
 wheel==0.24.0
-zappa==0.26.0
+zappa==0.27.0
