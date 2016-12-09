@@ -40,7 +40,8 @@ def check_valid_user(f):
         Otherwise, return an error page with corresponding message.
         """
         canvas_user_id = session.get('canvas_user_id')
-        if not session.get('lti_logged_in') or not canvas_user_id:
+        lti_logged_in = session.get('lti_logged_in', False)
+        if not lti_logged_in or not canvas_user_id:
             return render_template(
                 'error.html',
                 message='Not allowed!'
@@ -52,7 +53,7 @@ def check_valid_user(f):
             )
         course_id = int(kwargs.get('course_id'))
 
-        if not session['is_admin']:
+        if not session.get('is_admin', False):
             enrollments_url = "%scourses/%s/enrollments" % (config.API_URL, course_id)
 
             payload = {
@@ -104,7 +105,7 @@ def xml():
     )
 
 
-@app.route("/quiz/<course_id>", methods=['GET'])
+@app.route("/quiz/<course_id>/", methods=['GET'])
 @check_valid_user
 def quiz(course_id=None):
     """
@@ -113,12 +114,6 @@ def quiz(course_id=None):
     Displays a page to the user that allows them to select students
     to moderate quizzes for.
     """
-    if not course_id:
-        return render_template(
-            'error.html',
-            message='course_id required',
-        )
-
     return render_template(
         'userselect.html',
         course_id=course_id,
@@ -147,33 +142,36 @@ def update(course_id=None):
         ]
     }
     """
-    if not course_id:
-        return "course_id required"
-
     post_json = request.get_json()
 
     if not post_json:
-        return "invalid request"
+        return json.dumps({
+            "error": True,
+            "message": "invalid request"
+        })
 
-    course_json = get_course(course_id)
+    try:
+        course_json = get_course(course_id)
+    except requests.exceptions.HTTPError:
+        return json.dumps({
+            'error': True,
+            'message': 'Course not found.'
+        })
+
     course_name = course_json.get('name', '<UNNAMED COURSE>')
 
     user_ids = post_json.get('user_ids', [])
     percent = post_json.get('percent', None)
 
     if not percent:
-        return "percent required"
+        return json.dumps({
+            "error": True,
+            "message": "percent required"
+        })
 
     if len(missing_quizzes(course_id, True)) > 0:
         # Some quizzes are missing. Refresh first.
-        try:
-            refresh_status = json.loads(refresh(course_id=course_id))
-        except ValueError:
-            return json.dumps({
-                "error": True,
-                "message": "Error refreshing quizzes."
-            })
-
+        refresh_status = json.loads(refresh(course_id=course_id))
         if refresh_status.get('success', False) is False:
             return json.dumps({
                 "error": True,
@@ -232,7 +230,6 @@ def update(course_id=None):
         quiz_title = quiz.get('title', "[UNTITLED QUIZ]")
 
         extension_response = extend_quiz(course_id, quiz, percent, user_ids)
-
         if extension_response.get('success', False) is True:
             # add/update quiz
             quiz_obj, created = get_or_create(
@@ -305,7 +302,7 @@ def refresh(course_id=None):
     except requests.exceptions.HTTPError:
         return json.dumps({
             'success': False,
-            'message': 'Course not found'
+            'message': 'Course not found.'
         })
 
     # quiz stuff
@@ -360,7 +357,7 @@ def missing_quizzes_check(course_id):
     course = Course.query.filter_by(canvas_id=course_id).first()
     if course is None:
         # No record of this course. No need to update yet.
-        return "false"
+        return 'false'
 
     num_extensions = Extension.query.filter_by(course_id=course.id).count()
     if num_extensions == 0:
@@ -383,8 +380,6 @@ def filter(course_id=None):
     :returns: A list of students in the course using the template
         user_list.html.
     """
-    if not course_id:
-        return "course_id required"
 
     query = request.args.get('query', '').lower()
     page = int(request.args.get('page', 1))
@@ -417,7 +412,7 @@ def lti_tool():
     course_id = request.form.get('custom_canvas_course_id')
     canvas_user_id = request.form.get('custom_canvas_user_id')
 
-    roles = request.form['ext_roles']
+    roles = request.form.get('ext_roles', [])
     if "Administrator" not in roles and "Instructor" not in roles:
         return render_template(
             'error.html',
