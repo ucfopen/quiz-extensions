@@ -42,7 +42,7 @@ def extend_quiz(course_id, quiz, percent, user_id_list):
             'added_time': None
         }
 
-    added_time = math.ceil(time_limit * ((float(percent)-100) / 100) if percent else 0)
+    added_time = int(math.ceil(time_limit * ((float(percent)-100) / 100) if percent else 0))
 
     quiz_extensions = defaultdict(list)
 
@@ -97,10 +97,7 @@ def get_quizzes(course_id, per_page=config.MAX_PER_PAGE):
         if 'errors' in quizzes_list:
             break
 
-        if isinstance(quizzes_list, list):
-            quizzes.extend(quizzes_list)
-        else:
-            quizzes = quizzes_list
+        quizzes.extend(quizzes_list)
 
         try:
             quizzes_url = quizzes_response.links['next']['url']
@@ -125,41 +122,38 @@ def search_students(course_id, per_page=config.DEFAULT_PER_PAGE, page=1, search_
     :param search_term: A string to filter students by
     :type search_term: str
     """
-    users_url = "%s/courses/%s/search_users?per_page=%s&page=%s&access_token=%s" % (
+    users_url = "%scourses/%s/search_users?per_page=%s&page=%s&access_token=%s" % (
         config.API_URL,
         course_id,
         per_page,
         page,
         config.API_KEY
     )
-    print users_url
-    try:
-        users_response = requests.get(
-            users_url,
-            # data={
-            #     'search_term': search_term,
-            #     'enrollment_type': 'student'
-            # },
-            # headers=headers,
-            timeout=10.0
-        )
-    except requests.Timeout:
-        print "timeout"
-        return [], 0
 
-    print "we did it!"
+    users_response = requests.get(
+        users_url,
+        data={
+            'search_term': search_term,
+            'enrollment_type': 'student'
+        },
+        headers=headers,
+    )
+
     user_list = users_response.json()
 
     if 'errors' in user_list:
         return [], 0
 
-    num_pages = int(
-        parse_qs(
-            urlsplit(
-                users_response.links['last']['url']
-            ).query
-        )['page'][0]
-    )
+    try:
+        num_pages = int(
+            parse_qs(
+                urlsplit(
+                    users_response.links['last']['url']
+                ).query
+            )['page'][0]
+        )
+    except KeyError:
+        num_pages = 0
 
     return user_list, num_pages
 
@@ -173,7 +167,7 @@ def get_user(user_id):
     :rtype: dict
     :returns: A dictionary representation of a User in Canvas.
     """
-    response = requests.get(config.API_URL + 'users/' + user_id, headers=headers)
+    response = requests.get(config.API_URL + 'users/' + str(user_id), headers=headers)
     response.raise_for_status()
 
     return response.json()
@@ -188,7 +182,7 @@ def get_course(course_id):
     :rtype: dict
     :returns: A dictionary representation of a Course in Canvas.
     """
-    response = requests.get(config.API_URL + 'courses/' + course_id, headers=headers)
+    response = requests.get(config.API_URL + 'courses/' + str(course_id), headers=headers)
     response.raise_for_status()
 
     return response.json()

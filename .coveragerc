@@ -1,0 +1,3 @@
+[run]
+source = .
+omit = *env/*, ims_lti_py/*, wsgi.py
