@@ -3,11 +3,11 @@ A self-service LTI for faculty to easily extend time for multiple users for all 
 Development Installation
 ------------
 
-    git clone git@github.com:ucfcdl/quiz-extensions-license.git
+	git clone git@github.com:ucfcdl/quiz-extensions-license.git
 
 Switch into the new directory
 
-    cd quiz-extensions-license
+	cd quiz-extensions-license
 
 Create the config file from the template
 
@@ -17,15 +17,13 @@ Fill in the config file
 
 	DEBUG = False  # Leave False on production
 
-	HOST = ''  # The IP/URL to run the server on
-	PORT = 5000  # The port to run the server on. Must be an integer
-
 	API_URL = ''  # Canvas API URL (e.g. 'http://example.com/api/v1/')
 	API_KEY = ''  # Canvas API Key
 
-	SECRET_KEY = ''  # A secret key for signing. KEEP THIS SECRET! (e.g. 'ClU##GM0"glpghx')
+	DEFAULT_PER_PAGE = 10  # The default number of objects the Canvas API will return per page (usually 10)
+	MAX_PER_PAGE = 100  # The maximum amount of objects the Canvas API will return per page (usually 100)
 
-	SSL_CONTEXT = None  # Used when configuring SSL on a development server
+	SECRET_KEY = ''  # A secret key for signing. KEEP THIS SECRET! (e.g. 'ClU##GM0"glpghx')
 
 	LTI_KEY = ''  # Consumer Key
 	LTI_SECRET = ''  # Shared Secret
@@ -33,6 +31,8 @@ Fill in the config file
 	LTI_TOOL_ID = ''  # A unique ID for the tool
 	LTI_DOMAIN = ''  # Domain hosting the LTI
 	LTI_LAUNCH_URL = ''  # Launch URL for the LTI, This should match the url for `lti_tool` in views.py (e.g. 'http://example.com/launch')
+
+	SQLALCHEMY_DATABASE_URI = ''  # URI for database. (e.g. 'mysql://root:root@localhost/quiz_extensions')
 
 
 Create a virtual environment
@@ -45,11 +45,25 @@ Source the environment
 
 Install required packages
 
-	pip install -r requirements.txt
+- If you want to be able to run tests:
+
+		pip install -r test_requirements.txt
+
+- Otherwise,
+
+		pip install -r requirements.txt
+
+Set `FLASK_APP` environment variable
+
+	export FLASK_APP=views.py
+
+Migrate database
+
+	flask db upgrade
 
 Run the server
 
-	python views.py
+	flask run
 	
 Production Installation
 ------------
@@ -76,7 +90,7 @@ This is for an Ubuntu 16.xx install but should work for other Debian/ubuntu base
 	sudo nano /etc/apache2/sites-available/000-default.conf
 	
 Put this inside 000-default.conf after VirtualHost *:80:
-        
+
 	#QUIZ EXTENSION CODE
 	Alias quiz-ext/static /var/www/quiz-extensions-license/static
 	<Directory /var/www/quiz-extensions-license/static>
@@ -107,24 +121,23 @@ Then:
 Edit your config.py and change the variables to match your server:
 
 	DEBUG = False  # Leave False on production
-	
-	#Not Needed On Production
-	HOST = ''  # The IP/URL to run the server on
-	PORT = 5000  # The port to run the server on. Must be an integer
-	
+
 	API_URL = ''  # Canvas API URL (e.g. 'http://example.com/api/v1/')
 	API_KEY = ''  # Canvas API Key
-	
-	SECRET_KEY = 'SECRET!'  # A secret key for signing. KEEP THIS SECRET! (e.g. 'ClU##GM0"glpghx')
-	
-	SSL_CONTEXT = None  # Used when configuring SSL on a development server
-	
-	LTI_KEY = 'key'  # Consumer Key
-	LTI_SECRET = 'secret'  # Shared Secret
-	
-	LTI_TOOL_ID = 'quiz_ext'  # A unique ID for the tool
-	LTI_DOMAIN = 'https://url.com/'  # Domain hosting the LTI
-	LTI_LAUNCH_URL = 'https://url.com/quiz-ext/launch'  # Launch URL for the LTI, This should match the url for `lti_tool` in views.py 
+
+	DEFAULT_PER_PAGE = 10  # The default number of objects the Canvas API will return per page (usually 10)
+	MAX_PER_PAGE = 100  # The maximum amount of objects the Canvas API will return per page (usually 100)
+
+	SECRET_KEY = ''  # A secret key for signing. KEEP THIS SECRET! (e.g. 'ClU##GM0"glpghx')
+
+	LTI_KEY = ''  # Consumer Key
+	LTI_SECRET = ''  # Shared Secret
+
+	LTI_TOOL_ID = ''  # A unique ID for the tool
+	LTI_DOMAIN = ''  # Domain hosting the LTI
+	LTI_LAUNCH_URL = ''  # Launch URL for the LTI, This should match the url for `lti_tool` in views.py (e.g. 'http://example.com/launch')
+
+	SQLALCHEMY_DATABASE_URI = ''  # URI for database. (e.g. 'mysql://root:root@localhost/quiz_extensions')
 
 Finally:
 	
