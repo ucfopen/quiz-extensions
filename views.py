@@ -79,6 +79,11 @@ def check_valid_user(f):
     return decorated_function
 
 
+@app.context_processor
+def add_google_analytics_id():
+    return dict(GOOGLE_ANALYTICS=config.GOOGLE_ANALYTICS)
+
+
 @app.route("/", methods=['POST', 'GET'])
 def index():
     """
