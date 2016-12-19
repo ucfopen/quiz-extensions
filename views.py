@@ -332,8 +332,15 @@ def refresh(course_id=None):
             extension_response = extend_quiz(course_id, quiz, percent, user_list)
 
             if extension_response.get('success', False) is True:
-                quiz_obj = Quiz(quiz_id, course.id, quiz_title)
-                db.session.add(quiz_obj)
+                # add/update quiz
+                quiz_obj, created = get_or_create(
+                    db.session,
+                    Quiz,
+                    canvas_id=quiz_id,
+                    course_id=course.id
+                )
+                quiz_obj.title = quiz_title
+
                 db.session.commit()
             else:
                 error_message = extension_response.get('message', '')

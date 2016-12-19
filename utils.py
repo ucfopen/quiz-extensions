@@ -139,9 +139,16 @@ def search_students(course_id, per_page=config.DEFAULT_PER_PAGE, page=1, search_
         headers=headers,
     )
 
-    user_list = users_response.json()
+    try:
+        user_list = users_response.json()
+    except ValueError:
+        # response is weird. log it!
+        # logger.exception('Error getting user list from Canvas.')
+        return [], 0
 
     if 'errors' in user_list:
+        # msg = 'Error getting user list from Canvas. Response: {}'
+        # logger.error(msg.format(users_response))
         return [], 0
 
     try:
