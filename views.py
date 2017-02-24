@@ -12,6 +12,8 @@ from ims_lti_py import ToolProvider
 from time import time
 
 app = Flask(__name__)
+app.debug = DEBUG
+app.secret_key = SECRET_KEY
 
 oauth_creds = {LTI_KEY: LTI_SECRET}
 
