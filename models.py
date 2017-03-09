@@ -63,6 +63,7 @@ class Course(db.Model):
 class Extension(db.Model):
     __tablename__ = 'extension'
     id = db.Column(db.Integer, primary_key=True)
+    active = db.Column(db.Boolean, default=True, nullable=False)
     course_id = db.Column(db.Integer, db.ForeignKey('course.id'))
     created_date = db.Column(db.DateTime, server_default=db.func.now())
     last_updated_date = db.Column(

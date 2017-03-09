@@ -194,13 +194,17 @@ def update(course_id=None):
 
     for user_id in user_ids:
         try:
-            canvas_user = get_user(user_id)
+            canvas_user = get_user(course_id, user_id)
 
             sortable_name = canvas_user.get('sortable_name', '<MISSING NAME>')
             sis_id = canvas_user.get('sis_user_id')
 
         except requests.exceptions.HTTPError:
-            # unable to find user
+            # Unable to find user. Log and skip them.
+            # logger.warning("Unable to find user #{} in course #{}".format(
+            #     user_id,
+            #     course_id
+            # ))
             continue
 
         user, created = get_or_create(db.session, User, canvas_id=user_id)
@@ -307,6 +311,7 @@ def refresh(course_id=None):
         course.course_name = course_name
         db.session.commit()
     except requests.exceptions.HTTPError:
+        # logger.warning("Unable to find course #{}".format(course_id))
         return json.dumps({
             'success': False,
             'message': 'Course not found.'
@@ -322,8 +327,27 @@ def refresh(course_id=None):
         })
 
     percent_user_map = defaultdict(list)
+
     for extension in course.extensions:
+        # If extension is inactive, ignore.
+        if not extension.active:
+            # logger.debug("Extension #{} is inactive.".format(extension.id))
+            continue
+
         user_canvas_id = User.query.filter_by(id=extension.user_id).first().canvas_id
+
+        # Check if user is in course. If not, deactivate extension.
+        try:
+            get_user(course_id, user_canvas_id)
+        except requests.exceptions.HTTPError:
+            # log_str = "User #{} not in course #{}. Deactivating extension #{}."
+            # logger.info(
+                # log_str.format(user_canvas_id, course_id, extension.id)
+            # )
+            extension.active = False
+            db.session.commit()
+            continue
+
         percent_user_map[extension.percent].append(user_canvas_id)
 
     for quiz in quizzes:
