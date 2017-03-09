@@ -1,5 +1,3 @@
-DEBUG = False  # Leave False on production
-
 API_URL = ''  # Canvas API URL (e.g. 'http://example.com/api/v1/')
 API_KEY = ''  # Canvas API Key
 
