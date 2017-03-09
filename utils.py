@@ -165,16 +165,25 @@ def search_students(course_id, per_page=config.DEFAULT_PER_PAGE, page=1, search_
     return user_list, num_pages
 
 
-def get_user(user_id):
+def get_user(course_id, user_id):
     """
-    Get a user from canvas by id.
+    Get a user from canvas by id, with respect to a course.
 
+    :param user_id: ID of a Canvas course.
+    :type user_id: int
     :param user_id: ID of a Canvas user.
     :type user_id: int
     :rtype: dict
     :returns: A dictionary representation of a User in Canvas.
     """
-    response = requests.get(config.API_URL + 'users/' + str(user_id), headers=headers)
+    response = requests.get(
+        '{}courses/{}/users/{}'.format(
+            config.API_URL,
+            course_id,
+            user_id
+        ),
+        headers=headers
+    )
     response.raise_for_status()
 
     return response.json()
