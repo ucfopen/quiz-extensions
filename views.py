@@ -6,6 +6,9 @@ from collections import defaultdict
 import requests
 import json
 
+import logging
+from logging.config import dictConfig
+
 # OAuth specific
 from ims_lti_py import ToolProvider
 from time import time
@@ -22,6 +25,9 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = config.SQLALCHEMY_DATABASE_URI
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = config.SQLALCHEMY_TRACK_MODIFICATIONS
 app.secret_key = config.SECRET_KEY
+
+dictConfig(config.LOGGING_CONFIG)
+logger = logging.getLogger('app')
 
 db.init_app(app)
 migrate = Migrate(app, db)
@@ -200,10 +206,10 @@ def update(course_id=None):
 
         except requests.exceptions.HTTPError:
             # Unable to find user. Log and skip them.
-            # logger.warning("Unable to find user #{} in course #{}".format(
-            #     user_id,
-            #     course_id
-            # ))
+            logger.warning("Unable to find user with #{} in course #{}".format(
+                user_id,
+                course_id
+            ))
             continue
 
         user, created = get_or_create(db.session, User, canvas_id=user_id)
@@ -310,7 +316,7 @@ def refresh(course_id=None):
         course.course_name = course_name
         db.session.commit()
     except requests.exceptions.HTTPError:
-        # logger.warning("Unable to find course #{}".format(course_id))
+        logger.warning("Unable to find course #{}".format(course_id))
         return json.dumps({
             'success': False,
             'message': 'Course not found.'
@@ -330,7 +336,7 @@ def refresh(course_id=None):
     for extension in course.extensions:
         # If extension is inactive, ignore.
         if not extension.active:
-            # logger.debug("Extension #{} is inactive.".format(extension.id))
+            logger.debug("Extension #{} is inactive.".format(extension.id))
             continue
 
         user_canvas_id = User.query.filter_by(id=extension.user_id).first().canvas_id
@@ -339,10 +345,10 @@ def refresh(course_id=None):
         try:
             get_user(course_id, user_canvas_id)
         except requests.exceptions.HTTPError:
-            # log_str = "User #{} not in course #{}. Deactivating extension #{}."
-            # logger.info(
-                # log_str.format(user_canvas_id, course_id, extension.id)
-            # )
+            log_str = "User #{} not in course #{}. Deactivating extension #{}."
+            logger.info(
+                log_str.format(user_canvas_id, course_id, extension.id)
+            )
             extension.active = False
             db.session.commit()
             continue
