@@ -10,6 +10,8 @@ import config
 from models import Course, Extension, Quiz, User
 import views
 
+import logging
+
 
 @requests_mock.Mocker()
 class ViewTests(flask_testing.TestCase):
@@ -17,16 +19,19 @@ class ViewTests(flask_testing.TestCase):
     def create_app(self):
         app = views.app
         app.config['TESTING'] = True
+        app.config['DEBUG'] = False
         app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/test.db'
         app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
         return app
 
     def setUp(self):
+        logging.disable(logging.CRITICAL)
         views.db.init_app(self.app)
         with self.app.test_request_context():
             views.db.create_all()
 
     def tearDown(self):
+        logging.disable(logging.NOTSET)
         views.db.session.remove()
         views.db.drop_all()
 
@@ -855,7 +860,6 @@ class ViewTests(flask_testing.TestCase):
             'Must be an Administrator or Instructor'
         )
 
-
     def test_lti_tool(self, m):
 
         user_id = 42
@@ -879,16 +883,19 @@ class UtilTests(flask_testing.TestCase):
     def create_app(self):
         app = views.app
         app.config['TESTING'] = True
+        app.config['DEBUG'] = False
         app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/test.db'
         app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
         return app
 
     def setUp(self):
+        logging.disable(logging.CRITICAL)
         views.db.init_app(self.app)
         with self.app.test_request_context():
             views.db.create_all()
 
     def tearDown(self):
+        logging.disable(logging.NOTSET)
         views.db.session.remove()
         views.db.drop_all()
 
