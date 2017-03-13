@@ -27,7 +27,7 @@ class User(db.Model):
         self.sortable_name = sortable_name
 
     def __repr__(self):
-        return '<User {}>'.format(self.sortable_name)
+        return '<User {}>'.format(self.sortable_name)  # pragma: no cover
 
 
 class Course(db.Model):
@@ -57,7 +57,7 @@ class Course(db.Model):
         self.course_name = course_name
 
     def __repr__(self):
-        return '<Course {}>'.format(self.course_name)
+        return '<Course {}>'.format(self.course_name)  # pragma: no cover
 
 
 class Extension(db.Model):
