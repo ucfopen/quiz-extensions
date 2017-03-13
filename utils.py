@@ -7,6 +7,11 @@ from urlparse import parse_qs, urlsplit
 import config
 from models import Quiz
 
+import logging
+from logging.config import dictConfig
+
+dictConfig(config.LOGGING_CONFIG)
+logger = logging.getLogger('app')
 
 headers = {'Authorization': 'Bearer ' + config.API_KEY}
 json_headers = {'Authorization': 'Bearer ' + config.API_KEY, 'Content-type': 'application/json'}
@@ -143,12 +148,12 @@ def search_students(course_id, per_page=config.DEFAULT_PER_PAGE, page=1, search_
         user_list = users_response.json()
     except ValueError:
         # response is weird. log it!
-        # logger.exception('Error getting user list from Canvas.')
+        logger.exception('Error getting user list from Canvas.')
         return [], 0
 
     if 'errors' in user_list:
-        # msg = 'Error getting user list from Canvas. Response: {}'
-        # logger.error(msg.format(users_response))
+        msg = 'Error getting user list from Canvas. Response: {}'
+        logger.error(msg.format(users_response))
         return [], 0
 
     try:

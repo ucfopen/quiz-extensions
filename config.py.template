@@ -15,3 +15,38 @@ LTI_LAUNCH_URL = ''  # Launch URL for the LTI, This should match the url for `lt
 SQLALCHEMY_DATABASE_URI = ''  # URI for database. (e.g. 'mysql://root:root@localhost/quiz_extensions')
 
 GOOGLE_ANALYTICS = ''  # The Google Analytics ID to use.
+
+LOGGING_CONFIG = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'standard': {
+            'format': '%(asctime)s [%(levelname)s] {%(filename)s:%(lineno)d} %(message)s'
+        },
+        'bare': {
+            'format': '%(message)s'
+        }
+    },
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'formatter': 'standard',
+            'class': 'logging.StreamHandler',
+        },
+        'file': {
+            'level': 'INFO',
+            'formatter': 'standard',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': 'logs/quiz_ext.log',
+            'maxBytes': 1024 * 1024 * 5,  # 5 MB
+            'backupCount': 5,
+        }
+    },
+    'loggers': {
+        'app': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': True
+        }
+    }
+}
