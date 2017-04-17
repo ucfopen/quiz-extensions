@@ -263,12 +263,20 @@ class ViewTests(flask_testing.TestCase):
         m.register_uri(
             'GET',
             '/api/v1/courses/1/users/11',
-            json={'id': 11, 'sortable_name': 'Joe Schmoe'}
+            json={
+                'id': 11,
+                'sortable_name': 'Joe Smyth',
+                'enrollments': [{'type': 'StudentEnrollment'}]
+            }
         )
         m.register_uri(
             'GET',
             '/api/v1/courses/1/users/12',
-            json={'id': 12, 'sortable_name': 'Jack Smith'}
+            json={
+                'id': 12,
+                'sortable_name': 'Jack Smith',
+                'enrollments': [{'type': 'StudentEnrollment'}]
+            }
         )
         m.register_uri(
             'POST',
@@ -279,7 +287,7 @@ class ViewTests(flask_testing.TestCase):
         course = Course(course_id, course_name='Example Course')
         views.db.session.add(course)
 
-        user = User(11, sortable_name='Joe Schmoe')
+        user = User(11, sortable_name='Joe Smyth')
         views.db.session.add(user)
         user2 = User(12, sortable_name='Jack Smith')
         views.db.session.add(user2)
@@ -335,7 +343,7 @@ class ViewTests(flask_testing.TestCase):
         m.register_uri(
             'GET',
             '/api/v1/courses/1/users/11',
-            json={'id': 11, 'sortable_name': 'Joe Schmoe'}
+            json={'id': 11, 'sortable_name': 'Joe Smyth'}
         )
         m.register_uri(
             'GET',
@@ -345,7 +353,7 @@ class ViewTests(flask_testing.TestCase):
         course = Course(course_id, course_name='Example Course')
         views.db.session.add(course)
 
-        user = User(11, sortable_name='Joe Schmoe')
+        user = User(11, sortable_name='Joe Smyth')
         views.db.session.add(user)
         user2 = User(12, sortable_name='Jack Smith')
         views.db.session.add(user2)
@@ -402,7 +410,7 @@ class ViewTests(flask_testing.TestCase):
         m.register_uri(
             'GET',
             '/api/v1/courses/1/users/11',
-            json={'id': 11, 'sortable_name': 'Joe Schmoe'}
+            json={'id': 11, 'sortable_name': 'Joe Smyth'}
         )
         m.register_uri(
             'GET',
@@ -412,7 +420,11 @@ class ViewTests(flask_testing.TestCase):
         m.register_uri(
             'GET',
             '/api/v1/courses/1/users/13',
-            json={'id': 13, 'sortable_name': 'Jack Smith'}
+            json={
+                'id': 13,
+                'sortable_name': 'Jack Smith',
+                'enrollments': [{'type': 'StudentEnrollment'}]
+            }
         )
         m.register_uri(
             'POST',
@@ -431,7 +443,7 @@ class ViewTests(flask_testing.TestCase):
         course = Course(course_id, course_name='Example Course')
         views.db.session.add(course)
 
-        user = User(11, sortable_name='Joe Schmoe')
+        user = User(11, sortable_name='Joe Smyth')
         views.db.session.add(user)
         user2 = User(13, sortable_name='Jack Smith')
         views.db.session.add(user2)
@@ -488,7 +500,7 @@ class ViewTests(flask_testing.TestCase):
         m.register_uri(
             'GET',
             '/api/v1/courses/1/users/11',
-            json={'id': 11, 'sortable_name': 'Joe Schmoe'}
+            json={'id': 11, 'sortable_name': 'Joe Smyth'}
         )
         m.register_uri(
             'GET',
@@ -514,7 +526,7 @@ class ViewTests(flask_testing.TestCase):
         course = Course(course_id, course_name='Example Course')
         views.db.session.add(course)
 
-        user = User(11, sortable_name='Joe Schmoe')
+        user = User(11, sortable_name='Joe Smyth')
         views.db.session.add(user)
         user2 = User(13, sortable_name='Jack Smith')
         views.db.session.add(user2)
@@ -627,7 +639,11 @@ class ViewTests(flask_testing.TestCase):
         m.register_uri(
             'GET',
             '/api/v1/courses/1/users/12345',
-            json={'id': 12345, 'sortable_name': 'John Smith'}
+            json={
+                'id': 12345,
+                'sortable_name': 'John Smith',
+                'enrollments': [{'type': 'StudentEnrollment'}]
+            }
         )
 
         course = Course(course_id, course_name='Example Course')

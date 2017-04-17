@@ -343,7 +343,26 @@ def refresh(course_id=None):
 
         # Check if user is in course. If not, deactivate extension.
         try:
-            get_user(course_id, user_canvas_id)
+            canvas_user = get_user(course_id, user_canvas_id)
+
+            # Skip user if they aren't a student. Fixes a rare edge case where
+            # a student that previously recieved an accomodation changes roles.
+            enrolls = canvas_user.get('enrollments', [])
+            type_list = [e['type'] for e in enrolls]
+            if not any(e_type == 'StudentEnrollment' for e_type in type_list):
+                logger.info((
+                    "User #{} was found in course #{}, but is not a student. "
+                    "Deactivating extension #{}. Roles found: {}").format(
+                        user_canvas_id,
+                        course_id,
+                        extension.id,
+                        ", ".join(type_list) if len(enrolls) > 0 else None
+                    )
+                )
+                extension.active = False
+                db.session.commit()
+                continue
+
         except requests.exceptions.HTTPError:
             log_str = "User #{} not in course #{}. Deactivating extension #{}."
             logger.info(
@@ -377,7 +396,7 @@ def refresh(course_id=None):
                 error_message = extension_response.get('message', '')
                 return json.dumps({
                     'success': False,
-                    'message': 'Some quizzes couldn\'t be updated. ' + error_message
+                    'message': 'Some quizzes couldn\'t be updated. {}'.format(error_message)
                 })
 
     return json.dumps({
