@@ -187,6 +187,7 @@ def get_user(course_id, user_id):
             course_id,
             user_id
         ),
+        params={'include[]': 'enrollments'},
         headers=headers
     )
     response.raise_for_status()
