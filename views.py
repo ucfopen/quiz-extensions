@@ -396,7 +396,7 @@ def refresh(course_id=None):
                 error_message = extension_response.get('message', '')
                 return json.dumps({
                     'success': False,
-                    'message': 'Some quizzes couldn\'t be updated. ' + error_message
+                    'message': 'Some quizzes couldn\'t be updated. {}'.format(error_message)
                 })
 
     return json.dumps({
