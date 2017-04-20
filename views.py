@@ -39,7 +39,10 @@ migrate = Migrate(app, db)
 
 oauth_creds = {config.LTI_KEY: config.LTI_SECRET}
 
-json_headers = {'Authorization': 'Bearer ' + config.API_KEY, 'Content-type': 'application/json'}
+json_headers = {
+    'Authorization': 'Bearer ' + config.API_KEY,
+    'Content-type': 'application/json'
+}
 
 
 def check_valid_user(f):
@@ -66,11 +69,18 @@ def check_valid_user(f):
         course_id = int(kwargs.get('course_id'))
 
         if not session.get('is_admin', False):
-            enrollments_url = "%scourses/%s/enrollments" % (config.API_URL, course_id)
+            enrollments_url = "{}courses/{}/enrollments".format(
+                config.API_URL,
+                course_id
+            )
 
             payload = {
                 'user_id': canvas_user_id,
-                'type': ['TeacherEnrollment', 'TaEnrollment', 'DesignerEnrollment']
+                'type': [
+                    'TeacherEnrollment',
+                    'TaEnrollment',
+                    'DesignerEnrollment'
+                ]
             }
 
             user_enrollments_response = requests.get(
@@ -81,7 +91,10 @@ def check_valid_user(f):
             user_enrollments = user_enrollments_response.json()
 
             if not user_enrollments or 'errors' in user_enrollments:
-                message = 'You are not enrolled in this course as a Teacher, TA, or Designer.'
+                message = (
+                    'You are not enrolled in this course as a Teacher, '
+                    'TA, or Designer.'
+                )
                 return render_template(
                     'error.html',
                     message=message
@@ -194,7 +207,10 @@ def update(course_id=None):
                 "error": True,
                 "message": refresh_status.get(
                     'message',
-                    "Detected missing quizzes. Attempted to update, but an unknown error occured."
+                    (
+                        'Detected missing quizzes. Attempted to update, but '
+                        'an unknown error occured.'
+                    )
                 )
             })
 
@@ -211,10 +227,12 @@ def update(course_id=None):
 
         except requests.exceptions.HTTPError:
             # Unable to find user. Log and skip them.
-            logger.warning("Unable to find user with #{} in course #{}".format(
-                user_id,
-                course_id
-            ))
+            logger.warning(
+                "Unable to find user with #{} in course #{}".format(
+                    user_id,
+                    course_id
+                )
+            )
             continue
 
         user, created = get_or_create(db.session, User, canvas_id=user_id)
@@ -274,7 +292,10 @@ def update(course_id=None):
         else:
             return json.dumps({
                 'error': True,
-                'message': extension_response.get('message', 'An unknown error occured')
+                'message': extension_response.get(
+                    'message',
+                    'An unknown error occured'
+                )
             })
 
     msg_str = (
@@ -350,10 +371,17 @@ def refresh_background(course_id):
     update_job(job, 0, 'Starting...')
 
     with app.app_context():
-        course, created = get_or_create(db.session, Course, canvas_id=course_id)
+        course, created = get_or_create(
+            db.session,
+            Course,
+            canvas_id=course_id
+        )
 
         try:
-            course_name = get_course(course_id).get('name', '<UNNAMED COURSE>')
+            course_name = get_course(course_id).get(
+                'name',
+                '<UNNAMED COURSE>'
+            )
             course.course_name = course_name
             db.session.commit()
         except requests.exceptions.HTTPError:
@@ -383,23 +411,28 @@ def refresh_background(course_id):
         for extension in course.extensions:
             # If extension is inactive, ignore.
             if not extension.active:
-                logger.debug('Extension #{} is inactive.'.format(extension.id))
+                logger.debug('Extension #{} is inactive.'.format(
+                    extension.id
+                ))
                 continue
 
-            user_canvas_id = User.query.filter_by(id=extension.user_id).first().canvas_id
+            user_canvas_id = User.query.filter_by(
+                id=extension.user_id
+            ).first().canvas_id
 
             # Check if user is in course. If not, deactivate extension.
             try:
                 canvas_user = get_user(course_id, user_canvas_id)
 
-                # Skip user if they aren't a student. Fixes a rare edge case where
-                # a student that previously recieved an accomodation changes roles.
+                # Skip user if not a student. Fixes an edge case where a
+                # student that previously recieved an extension changes roles.
                 enrolls = canvas_user.get('enrollments', [])
                 type_list = [e['type'] for e in enrolls]
-                if not any(e_type == 'StudentEnrollment' for e_type in type_list):
+                if not any(t == 'StudentEnrollment' for t in type_list):
                     logger.info((
-                        "User #{} was found in course #{}, but is not a student. "
-                        "Deactivating extension #{}. Roles found: {}").format(
+                        "User #{} was found in course #{}, but is not a "
+                        "student. Deactivating extension #{}. Roles found: {}"
+                        ).format(
                             user_canvas_id,
                             course_id,
                             extension.id,
@@ -411,7 +444,9 @@ def refresh_background(course_id):
                     continue
 
             except requests.exceptions.HTTPError:
-                log_str = 'User #{} not in course #{}. Deactivating extension #{}.'
+                log_str = (
+                    'User #{} not in course #{}. Deactivating extension #{}.'
+                )
                 logger.info(
                     log_str.format(user_canvas_id, course_id, extension.id)
                 )
@@ -426,7 +461,8 @@ def refresh_background(course_id):
             quiz_title = quiz.get('title', '[UNTITLED QUIZ]')
 
             comp_perc = int((float(index)/float(num_quizzes)) * 100)
-            update_job(job, comp_perc, 'Processing quiz #{} - {} [{} of {}]'.format(
+            processing_str = 'Processing quiz #{} - {} [{} of {}]'
+            update_job(job, comp_perc, processing_str.format(
                 quiz_id,
                 quiz_title,
                 index,
@@ -434,7 +470,12 @@ def refresh_background(course_id):
             ))
 
             for percent, user_list in percent_user_map.iteritems():
-                extension_response = extend_quiz(course_id, quiz, percent, user_list)
+                extension_response = extend_quiz(
+                    course_id,
+                    quiz,
+                    percent,
+                    user_list
+                )
 
                 if extension_response.get('success', False) is True:
                     # add/update quiz
