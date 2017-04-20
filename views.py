@@ -1,24 +1,29 @@
-from flask import Flask, render_template, session, request, redirect, url_for, Response
-from flask_migrate import Migrate
-from functools import wraps
-
 from collections import defaultdict
-import requests
-import json
-
+from functools import wraps
 import logging
 from logging.config import dictConfig
-
-# OAuth specific
-from ims_lti_py import ToolProvider
+import json
 from time import time
 
+from flask import (
+    Flask, render_template, session, request, redirect, url_for, Response,
+)
+from flask_migrate import Migrate
+from ims_lti_py import ToolProvider
+import requests
+from rq import get_current_job, Queue
+from rq.job import Job
+
+import config
 from models import db, Course, Extension, Quiz, User
 from utils import (
     extend_quiz, get_course, get_or_create, get_quizzes, get_user,
-    missing_quizzes, search_students
+    missing_quizzes, search_students, update_job
 )
-import config
+from worker import conn
+
+
+q = Queue(connection=conn)
 
 app = Flask(__name__)
 
@@ -294,115 +299,260 @@ def update(course_id=None):
     })
 
 
-@app.route("/refresh/<course_id>/", methods=['POST'])
-@check_valid_user
+@app.route('/refresh/<course_id>/', methods=['POST'])
 def refresh(course_id=None):
+    """
+    Creates a new `refresh_background` job.
+
+    :param course_id: The Canvas ID of the Course.
+    :type course_id: int
+    :rtype: str
+    :returns: The ID of the started job.
+    """
+    job = q.enqueue_call(
+        func=refresh_background, args=(course_id,)
+    )
+    return job.get_id()
+
+
+@app.route('/jobs/<job_key>/', methods=['GET'])
+def job_status(job_key):
+    job = Job.fetch(job_key, connection=conn)
+
+    if job.is_finished:
+        return Response(
+            json.dumps(job.result),
+            mimetype='application/json',
+            status=200
+        )
+    else:
+        return Response(
+            json.dumps(job.meta),
+            mimetype='application/json',
+            status=202
+        )
+
+
+def refresh_background(course_id):
     """
     Look up existing extensions and apply them to new quizzes.
 
     :param course_id: The Canvas ID of the Course.
     :type course_id: int
-    :rtype: str
-    :returns: A JSON-formatted string representation of an object
-        containing two parts:
+    :rtype: dict
+    :returns: A dictionary containing two parts:
 
-        - success `bool` false if there was an error, true otherwise.
+        - success `bool` False if there was an error, True otherwise.
         - message `str` A long description of success or failure.
     """
-    course, created = get_or_create(db.session, Course, canvas_id=course_id)
+    job = get_current_job()
 
-    try:
-        course_name = get_course(course_id).get('name', '<UNNAMED COURSE>')
-        course.course_name = course_name
-        db.session.commit()
-    except requests.exceptions.HTTPError:
-        logger.warning("Unable to find course #{}".format(course_id))
-        return json.dumps({
-            'success': False,
-            'message': 'Course not found.'
-        })
+    update_job(job, 0, 'Starting...')
 
-    # quiz stuff
-    quizzes = missing_quizzes(course_id)
+    with app.app_context():
+        course, created = get_or_create(db.session, Course, canvas_id=course_id)
 
-    if len(quizzes) < 1:
-        return json.dumps({
-            'success': True,
-            'message': 'No quizzes require updates.'
-        })
-
-    percent_user_map = defaultdict(list)
-
-    for extension in course.extensions:
-        # If extension is inactive, ignore.
-        if not extension.active:
-            logger.debug("Extension #{} is inactive.".format(extension.id))
-            continue
-
-        user_canvas_id = User.query.filter_by(id=extension.user_id).first().canvas_id
-
-        # Check if user is in course. If not, deactivate extension.
         try:
-            canvas_user = get_user(course_id, user_canvas_id)
+            course_name = get_course(course_id).get('name', '<UNNAMED COURSE>')
+            course.course_name = course_name
+            db.session.commit()
+        except requests.exceptions.HTTPError:
+            update_job(job, 100, 'Course not found.', error=True)
+            logger.warning('Unable to find course #{}'.format(course_id))
+            return {
+                'success': False,
+                'message': 'Course not found.'
+            }
 
-            # Skip user if they aren't a student. Fixes a rare edge case where
-            # a student that previously recieved an accomodation changes roles.
-            enrolls = canvas_user.get('enrollments', [])
-            type_list = [e['type'] for e in enrolls]
-            if not any(e_type == 'StudentEnrollment' for e_type in type_list):
-                logger.info((
-                    "User #{} was found in course #{}, but is not a student. "
-                    "Deactivating extension #{}. Roles found: {}").format(
-                        user_canvas_id,
-                        course_id,
-                        extension.id,
-                        ", ".join(type_list) if len(enrolls) > 0 else None
+        # quiz stuff
+        quizzes = missing_quizzes(course_id)
+
+        num_quizzes = len(quizzes)
+
+        if num_quizzes < 1:
+            update_job(job, 100, 'Complete. No quizzes required updates.')
+
+            return {
+                'success': True,
+                'message': 'No quizzes require updates.'
+            }
+
+        percent_user_map = defaultdict(list)
+
+        update_job(job, 0, 'Getting past extensions.')
+        for extension in course.extensions:
+            # If extension is inactive, ignore.
+            if not extension.active:
+                logger.debug('Extension #{} is inactive.'.format(extension.id))
+                continue
+
+            user_canvas_id = User.query.filter_by(id=extension.user_id).first().canvas_id
+
+            # Check if user is in course. If not, deactivate extension.
+            try:
+                canvas_user = get_user(course_id, user_canvas_id)
+
+                # Skip user if they aren't a student. Fixes a rare edge case where
+                # a student that previously recieved an accomodation changes roles.
+                enrolls = canvas_user.get('enrollments', [])
+                type_list = [e['type'] for e in enrolls]
+                if not any(e_type == 'StudentEnrollment' for e_type in type_list):
+                    logger.info((
+                        "User #{} was found in course #{}, but is not a student. "
+                        "Deactivating extension #{}. Roles found: {}").format(
+                            user_canvas_id,
+                            course_id,
+                            extension.id,
+                            ", ".join(type_list) if len(enrolls) > 0 else None
+                        )
                     )
+                    extension.active = False
+                    db.session.commit()
+                    continue
+
+            except requests.exceptions.HTTPError:
+                log_str = 'User #{} not in course #{}. Deactivating extension #{}.'
+                logger.info(
+                    log_str.format(user_canvas_id, course_id, extension.id)
                 )
                 extension.active = False
                 db.session.commit()
                 continue
 
-        except requests.exceptions.HTTPError:
-            log_str = "User #{} not in course #{}. Deactivating extension #{}."
-            logger.info(
-                log_str.format(user_canvas_id, course_id, extension.id)
-            )
-            extension.active = False
-            db.session.commit()
-            continue
+            percent_user_map[extension.percent].append(user_canvas_id)
 
-        percent_user_map[extension.percent].append(user_canvas_id)
+        for index, quiz in enumerate(quizzes):
+            quiz_id = quiz.get('id', None)
+            quiz_title = quiz.get('title', '[UNTITLED QUIZ]')
 
-    for quiz in quizzes:
-        quiz_id = quiz.get('id', None)
-        quiz_title = quiz.get('title', "[UNTITLED QUIZ]")
+            comp_perc = int((float(index)/float(num_quizzes)) * 100)
+            update_job(job, comp_perc, 'Processing quiz #{} - {} [{} of {}]'.format(
+                quiz_id,
+                quiz_title,
+                index,
+                num_quizzes
+            ))
 
-        for percent, user_list in percent_user_map.iteritems():
-            extension_response = extend_quiz(course_id, quiz, percent, user_list)
+            for percent, user_list in percent_user_map.iteritems():
+                extension_response = extend_quiz(course_id, quiz, percent, user_list)
 
-            if extension_response.get('success', False) is True:
-                # add/update quiz
-                quiz_obj, created = get_or_create(
-                    db.session,
-                    Quiz,
-                    canvas_id=quiz_id,
-                    course_id=course.id
-                )
-                quiz_obj.title = quiz_title
+                if extension_response.get('success', False) is True:
+                    # add/update quiz
+                    quiz_obj, created = get_or_create(
+                        db.session,
+                        Quiz,
+                        canvas_id=quiz_id,
+                        course_id=course.id
+                    )
+                    quiz_obj.title = quiz_title
 
-                db.session.commit()
-            else:
-                error_message = extension_response.get('message', '')
-                return json.dumps({
-                    'success': False,
-                    'message': 'Some quizzes couldn\'t be updated. {}'.format(error_message)
-                })
+                    db.session.commit()
+                else:
+                    error_message = extension_response.get('message', '')
+                    update_job(job, 100, 'Some quizzes couldn\'t be updated.', error=True)
+                    return {
+                        'success': False,
+                        'message': 'Some quizzes couldn\'t be updated. ' + error_message
+                    }
 
-    return json.dumps({
-        'success': True,
-        'message': '{} quizzes have been updated.'.format(len(quizzes))
-    })
+        return {
+            'success': True,
+            'message': '{} quizzes have been updated.'.format(len(quizzes))
+        }
+
+
+# @app.route("/refresh/<course_id>/", methods=['POST'])
+# @check_valid_user
+# def refresh(course_id=None):
+#     """
+#     Look up existing extensions and apply them to new quizzes.
+
+#     :param course_id: The Canvas ID of the Course.
+#     :type course_id: int
+#     :rtype: str
+#     :returns: A JSON-formatted string representation of an object
+#         containing two parts:
+
+#         - success `bool` false if there was an error, true otherwise.
+#         - message `str` A long description of success or failure.
+#     """
+#     course, created = get_or_create(db.session, Course, canvas_id=course_id)
+
+#     try:
+#         course_name = get_course(course_id).get('name', '<UNNAMED COURSE>')
+#         course.course_name = course_name
+#         db.session.commit()
+#     except requests.exceptions.HTTPError:
+#         logger.warning("Unable to find course #{}".format(course_id))
+#         return json.dumps({
+#             'success': False,
+#             'message': 'Course not found.'
+#         })
+
+#     # quiz stuff
+#     quizzes = missing_quizzes(course_id)
+
+#     num_quizzes = len(quizzes)
+
+#     if num_quizzes < 1:
+#         return json.dumps({
+#             'success': True,
+#             'message': 'No quizzes require updates.'
+#         })
+
+#     percent_user_map = defaultdict(list)
+
+#     for extension in course.extensions:
+#         # If extension is inactive, ignore.
+#         if not extension.active:
+#             logger.debug("Extension #{} is inactive.".format(extension.id))
+#             continue
+
+#         user_canvas_id = User.query.filter_by(id=extension.user_id).first().canvas_id
+
+#         # Check if user is in course. If not, deactivate extension.
+#         try:
+#             get_user(course_id, user_canvas_id)
+#         except requests.exceptions.HTTPError:
+#             log_str = "User #{} not in course #{}. Deactivating extension #{}."
+#             logger.info(
+#                 log_str.format(user_canvas_id, course_id, extension.id)
+#             )
+#             extension.active = False
+#             db.session.commit()
+#             continue
+
+#         percent_user_map[extension.percent].append(user_canvas_id)
+
+#     for quiz in quizzes:
+#         quiz_id = quiz.get('id', None)
+#         quiz_title = quiz.get('title', "[UNTITLED QUIZ]")
+
+#         for percent, user_list in percent_user_map.iteritems():
+#             extension_response = extend_quiz(course_id, quiz, percent, user_list)
+
+#             if extension_response.get('success', False) is True:
+#                 # add/update quiz
+#                 quiz_obj, created = get_or_create(
+#                     db.session,
+#                     Quiz,
+#                     canvas_id=quiz_id,
+#                     course_id=course.id
+#                 )
+#                 quiz_obj.title = quiz_title
+
+#                 db.session.commit()
+#             else:
+#                 error_message = extension_response.get('message', '')
+#                 return json.dumps({
+#                     'success': False,
+#                     'message': 'Some quizzes couldn\'t be updated. ' + error_message
+#                 })
+
+#     return json.dumps({
+#         'success': True,
+#         'message': '{} quizzes have been updated.'.format(len(quizzes))
+#     })
 
 
 @app.route("/missing_quizzes/<course_id>/", methods=['GET'])
@@ -416,6 +566,9 @@ def missing_quizzes_check(course_id):
     :returns: A JSON-formatted string representation of a boolean.
         "true" if there are missing quizzes, "false" if there are not.
     """
+    # TODO: Remove this. Is only for testing
+    return 'true'
+
     course = Course.query.filter_by(canvas_id=course_id).first()
     if course is None:
         # No record of this course. No need to update yet.

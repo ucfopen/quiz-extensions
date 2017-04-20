@@ -260,3 +260,10 @@ def missing_quizzes(course_id, quickcheck=False):
             break
 
     return missing_list
+
+
+def update_job(job, percent, status_msg, error=False):
+    job.meta['percent'] = percent
+    job.meta['status_msg'] = status_msg
+    job.meta['error'] = error
+    job.save()

@@ -115,37 +115,52 @@ submit_button.addEventListener('click', function(e) {
 	ajaxSend();
 });
 
+function checkStatus(id) {
+	// TODO: Write this
+	console.log('hello world!');
+}
+
 document.getElementById('refresh_link').addEventListener('click', function(e) {
 	e.preventDefault();
 
 	var refresh_url = e.target.getAttribute('href');
 
-	var xhttp = new XMLHttpRequest();
+	$.post(refresh_url)
+		.done(function(data) {
+			console.log(data);
+			var interval_id = setInterval(checkStatus, 1000, data);
+		})
+		.fail(function(data) {
+			// TODO: handle error case
+		});
 
-	xhttp.onreadystatechange = function() {
-		if (xhttp.readyState == 4) {
-			var alerts_div = document.getElementById('alerts');
+	// var xhttp = new XMLHttpRequest();
 
-			var response = JSON.parse(xhttp.responseText);
+	// xhttp.onreadystatechange = function() {
+	// 	if (xhttp.readyState == 4) {
+	// 		debugger;
+	// 		var alerts_div = document.getElementById('alerts');
 
-			var alert = document.createElement('div');
-			var close_alert_text = '<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>'
-			alert.innerHTML = close_alert_text + "<p>" + response['message'] + "</p>";
+	// 		var test_url = xhttp.responseText;
 
-			if (xhttp.status == 200 && response['success'] == true) {
-				missing_alert.style.display = "none";
-				alert.className = 'alert alert-success fade in';
-			}
-			else {
-				missing_alert.style.display = "";
-				alert.className = 'alert alert-danger fade in';
-			}
+	// 		var alert = document.createElement('div');
+	// 		var close_alert_text = '<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>'
+	// 		alert.innerHTML = close_alert_text + "<p>" + response['message'] + "</p>";
 
-			alerts_div.appendChild(alert);
-		}
-	};
-	xhttp.open("POST", refresh_url, true);
-	xhttp.send();
+	// 		if (xhttp.status == 200 && response['success'] == true) {
+	// 			missing_alert.style.display = "none";
+	// 			alert.className = 'alert alert-success fade in';
+	// 		}
+	// 		else {
+	// 			missing_alert.style.display = "";
+	// 			alert.className = 'alert alert-danger fade in';
+	// 		}
+
+	// 		alerts_div.appendChild(alert);
+	// 	}
+	// };
+	// xhttp.open("POST", refresh_url, true);
+	// xhttp.send();
 });
 
 $("#go_modal").on('hidden.bs.modal', function(e) {
