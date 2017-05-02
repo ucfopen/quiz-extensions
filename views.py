@@ -309,22 +309,6 @@ def update_background(course_id, extension_dict):
             ))
             return job.meta
 
-        # # handled by calling refresh as a prereq
-        # if len(missing_quizzes(course_id, True)) > 0:
-        #     # Some quizzes are missing. Refresh first.
-        #     refresh_status = json.loads(refresh(course_id=course_id))
-        #     if refresh_status.get('success', False) is False:
-        #         return json.dumps({
-        #             "error": True,
-        #             "message": refresh_status.get(
-        #                 'message',
-        #                 (
-        #                     'Detected missing quizzes. Attempted to update, but '
-        #                     'an unknown error occured.'
-        #                 )
-        #             )
-        #         })
-
         course, created = get_or_create(db.session, Course, canvas_id=course_id)
         course.course_name = course_name
         db.session.commit()
@@ -388,12 +372,12 @@ def update_background(course_id, extension_dict):
             quiz_id = quiz.get('id', None)
             quiz_title = quiz.get('title', "[UNTITLED QUIZ]")
 
-            comp_perc = int(((float(index) + 1)/float(num_quizzes)) * 100)
+            comp_perc = int(((float(index))/float(num_quizzes)) * 100)
             updating_str = 'Updating quiz #{} - {} [{} of {}]'
             update_job(
                 job,
                 comp_perc,
-                updating_str.format(quiz_id, quiz_title, index, num_quizzes),
+                updating_str.format(quiz_id, quiz_title, index + 1, num_quizzes),
                 'processing',
                 error=False
             )
@@ -569,7 +553,7 @@ def refresh_background(course_id):
             quiz_id = quiz.get('id', None)
             quiz_title = quiz.get('title', '[UNTITLED QUIZ]')
 
-            comp_perc = int(((float(index) + 1)/float(num_quizzes)) * 100)
+            comp_perc = int(((float(index))/float(num_quizzes)) * 100)
             refreshing_str = 'Refreshing quiz #{} - {} [{} of {}]'
             update_job(
                 job,
@@ -577,7 +561,7 @@ def refresh_background(course_id):
                 refreshing_str.format(
                     quiz_id,
                     quiz_title,
-                    index,
+                    index + 1,
                     num_quizzes
                 ),
                 'processing',
@@ -631,9 +615,6 @@ def missing_quizzes_check(course_id):
     :returns: A JSON-formatted string representation of a boolean.
         "true" if there are missing quizzes, "false" if there are not.
     """
-    # TODO: Remove this. Is only for testing
-    return 'true'
-
     course = Course.query.filter_by(canvas_id=course_id).first()
     if course is None:
         # No record of this course. No need to update yet.
