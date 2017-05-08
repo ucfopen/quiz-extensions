@@ -27,7 +27,6 @@ Fill in the config file
 	LTI_SECRET = ''  # Shared Secret
 
 	LTI_TOOL_ID = ''  # A unique ID for the tool
-	LTI_LAUNCH_URL = ''  # Launch URL for the LTI, This should match the url for `lti_tool` in views.py (e.g. 'http://example.com/launch')
 
 	SQLALCHEMY_DATABASE_URI = ''  # URI for database. (e.g. 'mysql://root:root@localhost/quiz_extensions')
 
