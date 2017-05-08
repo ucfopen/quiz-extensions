@@ -11,6 +11,7 @@ from flask import (
 from flask_migrate import Migrate
 from ims_lti_py import ToolProvider
 import requests
+import redis
 from rq import get_current_job, Queue
 from rq.job import Job
 from rq.exceptions import NoSuchJobError
@@ -21,9 +22,8 @@ from utils import (
     extend_quiz, get_course, get_or_create, get_quizzes, get_user,
     missing_quizzes, search_students, update_job
 )
-from worker import conn
 
-
+conn = redis.from_url(config.REDIS_URL)
 q = Queue(connection=conn)
 
 app = Flask(__name__)

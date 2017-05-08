@@ -15,24 +15,25 @@ Create the config file from the template
 
 Fill in the config file
 
-	DEBUG = False  # Leave False on production
-
 	API_URL = ''  # Canvas API URL (e.g. 'http://example.com/api/v1/')
 	API_KEY = ''  # Canvas API Key
 
 	DEFAULT_PER_PAGE = 10  # The default number of objects the Canvas API will return per page (usually 10)
 	MAX_PER_PAGE = 100  # The maximum amount of objects the Canvas API will return per page (usually 100)
 
-	SECRET_KEY = ''  # A secret key for signing. KEEP THIS SECRET! (e.g. 'ClU##GM0"glpghx')
+	SECRET_KEY = ''  # A secret key used by Flask for signing. KEEP THIS SECRET! (e.g. 'Ro0ibrkb4Z4bZmz1f5g1+/16K19GH/pa')
 
 	LTI_KEY = ''  # Consumer Key
 	LTI_SECRET = ''  # Shared Secret
 
 	LTI_TOOL_ID = ''  # A unique ID for the tool
-	LTI_DOMAIN = ''  # Domain hosting the LTI
 	LTI_LAUNCH_URL = ''  # Launch URL for the LTI, This should match the url for `lti_tool` in views.py (e.g. 'http://example.com/launch')
 
 	SQLALCHEMY_DATABASE_URI = ''  # URI for database. (e.g. 'mysql://root:root@localhost/quiz_extensions')
+
+	GOOGLE_ANALYTICS = ''  # The Google Analytics ID to use.
+
+	REDIS_URL = ''  # URL for the redis server (e.g. 'redis://localhost:6379')
 
 
 Create a virtual environment

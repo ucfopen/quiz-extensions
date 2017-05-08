@@ -261,11 +261,14 @@ function checkRefresh(refresh_job_url, refresh_only) {
 			prog_bar.addClass('progress-bar-danger');
 			prog_bar.removeClass('progress-bar-info');
 			clearInterval(refresh_interval_id);
+			clearInterval(update_interval_id);
+			refresh_div.find(".status-msg").attr('style', 'color: #f00;');
 		}
 		else if (data['status'] == "complete") {
 			prog_bar.addClass('progress-bar-success');
 			prog_bar.removeClass('progress-bar-info');
 			clearInterval(refresh_interval_id);
+			refresh_div.find(".status-msg").attr('style', 'color: #000;');
 
 			if (refresh_only === true) {
 				resetModal();
@@ -273,6 +276,17 @@ function checkRefresh(refresh_job_url, refresh_only) {
 		}
 
 		refresh_div.find(".status-msg").html(data['status_msg']);
+	})
+	.fail(function(data) {
+		var prog_bar = refresh_div.find(".progress-bar");
+
+		prog_bar.addClass('progress-bar-danger');
+		prog_bar.removeClass('progress-bar-info');
+		clearInterval(refresh_interval_id);
+		clearInterval(update_interval_id);
+
+		refresh_div.find(".status-msg").html('<span style="color: #f00;">Failed</span>');
+		resetModal();
 	});
 }
 
@@ -310,17 +324,34 @@ function checkUpdate(update_job_url) {
 			prog_bar.addClass('progress-bar-danger');
 			prog_bar.removeClass('progress-bar-info');
 			clearInterval(update_interval_id);
+			update_div.find(".status-msg").attr('style', 'color: #f00;');
 		}
 		else if (data['status'] == "complete") {
 			prog_bar.addClass('progress-bar-success');
 			prog_bar.removeClass('progress-bar-info');
 			clearInterval(update_interval_id);
+			update_div.find(".status-msg").attr('style', 'color: #000;');
 
 			updateResultTable(data['status_msg'], data['quiz_list'], data['unchanged_list']);
 
 			resetModal();
 			$(results_button).show();
 		}
+	})
+	.fail(function(data) {
+		percent = data['percent'];
+		update_div.find(".status_perc").html(percent.toString() + '%');
+		var prog_bar = update_div.find(".progress-bar");
+		prog_bar.attr('aria-valuenow', percent);
+		prog_bar.attr('style', 'width: ' + percent.toString() + '%;');
+		prog_bar.find('span').text(percent.toString() + '% Complete');
+		update_div.find(".status-msg").html(data['status_msg']);
+
+		prog_bar.addClass('progress-bar-danger');
+		prog_bar.removeClass('progress-bar-info');
+		clearInterval(update_interval_id);
+
+		resetModal();
 	});
 }
 

@@ -1,4 +1,5 @@
 import json
+import logging
 
 from flask import url_for, session
 import flask_testing
@@ -8,8 +9,6 @@ import requests_mock
 import config
 from models import Course, Extension, Quiz, User
 import views
-
-import logging
 
 
 @requests_mock.Mocker()
@@ -24,15 +23,23 @@ class ViewTests(flask_testing.TestCase):
         return app
 
     def setUp(self):
-        logging.disable(logging.CRITICAL)
+        # logging.disable(logging.CRITICAL)
         views.db.init_app(self.app)
         with self.app.test_request_context():
             views.db.create_all()
 
     def tearDown(self):
-        logging.disable(logging.NOTSET)
+        # logging.disable(logging.NOTSET)
         views.db.session.remove()
         views.db.drop_all()
+
+    @classmethod
+    def setUpClass(cls):
+        logging.disable(logging.CRITICAL)
+
+    @classmethod
+    def tearDownClass(cls):
+        logging.disable(logging.NOTSET)
 
     def test_check_valid_user_no_canvas_user_id(self, m):
         @views.check_valid_user
