@@ -1,22 +1,10 @@
-var filter_button = document.getElementById("filter_users_button");
-var filter_text = document.getElementById("filter_users");
 var selected_user_list = document.getElementById("selected_user_list");
 var user_list = document.getElementById("user_list");
 var user_list_div = document.getElementById("user_list_div");
-var percent_added_span = document.getElementById("modal_percent_added");
 var missing_alert = document.getElementById("missing_alert");
 var modal_selected_user_list = document.getElementById("modal_selected_user_list");
-var percent_form = document.getElementById("percent_form");
-var percent_select = document.getElementById("percent_select");
-var percent_input = document.getElementById("percent_input");
-var go_button = document.getElementById("go_button");
-var clear_button = document.getElementById("clear_button");
-var submit_button = document.getElementById("submit_button");
 var update_status = document.getElementById("update_status");
 var results_div = document.getElementById("results");
-var close_button = document.getElementById("close_button");
-var results_button = document.getElementById("results_button");
-var close_x = document.getElementById("close_x");
 var i = 0;
 var update_interval_id = null;
 var refresh_interval_id = null;
@@ -26,7 +14,7 @@ $("#user_list_div").on("click", ".user", function(e) {
 
 	var user_id = $(this).attr("data-user-id")
 	var is_duplicate = false;
-	$(selected_user_list).children().each(function(index, selected_user) {
+	$("#selected_user_list").children().each(function(index, selected_user) {
 		if ($(selected_user).attr("data-user-id") == user_id) {
 			is_duplicate = true;
 			return false;
@@ -34,15 +22,15 @@ $("#user_list_div").on("click", ".user", function(e) {
 	});
 	if (!is_duplicate) {
 		var new_user_button = $(this).clone();
-		$(selected_user_list).append(new_user_button);
+		$("#selected_user_list").append(new_user_button);
 	}
 	$(this).prop("disabled", true);
 	checkIfEmpty();
 });
 
-$("user_list_div").on("click", "#prev_user_page_button, #next_user_page_button", function(e) {
+$("#user_list_div").on("click", "#prev_user_page_button, #next_user_page_button", function(e) {
 	ajaxFilter(
-		$("filter_text").val(),
+		$("#filter_users").val(),
 		$(this).attr("data-page-number"),
 		update_user_list
 	);
@@ -59,27 +47,27 @@ $("#selected_user_list").on("click", ".user", function(e) {
 	checkIfEmpty();
 });
 
-filter_button.addEventListener("click", function(e) {
+$("#filter_users_button").on("click", function(e) {
 	e.preventDefault();
-	var query = filter_text.value;
+	var query = $("#filter_users").val()
 	ajaxFilter(query, curr_page_number, update_user_list);
 });
 
-percent_select.addEventListener("change", function(e) {
-	percent_added_span.innerHTML = getPercent();
+$("#percent_select").on("change", function(e) {
+	$("#modal_percent_added").html(getPercent());
 });
 
-percent_input.addEventListener("input", function(e) {
-	percent_added_span.innerHTML = getPercent();
+$("#percent_input").on("input", function(e) {
+	$("#modal_percent_added").html(getPercent())
 });
 
 $("#apply_now").on("click", function(e) {
-	$(percent_form).hide();
+	$("#percent_form").hide();
 	$(update_status).show();
 	$("#update").hide();
 	$("#submit_button").hide();
 	$("#close_button").prop("disabled", true);
-	$(close_x).hide();
+	$("#close_x").hide();
 
 	$.ajax({
 		type: "POST",
@@ -94,18 +82,18 @@ $("#apply_now").on("click", function(e) {
 	});
 });
 
-go_button.addEventListener("click", function(e) {
-	percent_added_span.innerHTML = getPercent();
+$("#go_button").on("click", function() {
+	$("#modal_percent_added").html(getPercent())
 
 	modal_selected_user_list.innerHTML = "";
 	var num_selected_users = selected_user_list.children.length;
 
 	if (num_selected_users === 0) {
-		submit_button.disabled = true;
+		$("#submit_button").prop("disabled", true);
 	}
 	else {
-		submit_button.style.display = "";
-		submit_button.disabled = false;
+		$("#submit_button").show();
+		$("#submit_button").prop("disabled", false);
 	}
 
 	for (i=0; i<num_selected_users; i++) {
@@ -120,27 +108,27 @@ go_button.addEventListener("click", function(e) {
 	}
 });
 
-clear_button.addEventListener("click", function(e) {
+$("#clear_button").on("click", function(e) {
 	clearSelectedStudents();
 });
 
-submit_button.addEventListener("click", function(e) {
-	$(submit_button).prop("disabled", true);
+$("#submit_button").on("click", function(e) {
+	$("#submit_button").prop("disabled", true);
 	ajaxSend();
 });
 
 $("#go_modal").on("hidden.bs.modal", function(e) {
-	$(percent_form).show();
+	$("#percent_form").show();
 	$(update_status).hide();
 	$(results_div).hide();
-	$(results_button).hide();
+	$("#results_button").hide();
 	resetBars();
 });
 
 $("#results_button").on("click", function(e) {
 	e.preventDefault();
 
-	$(percent_form).hide();
+	$("#percent_form").hide();
 	$(update_status).hide();
 	$(results_div).show();
 	$(this).hide();
@@ -177,18 +165,19 @@ function ajaxFilter(query, page, callback) {
 }
 
 function getPercent() {
-	if (percent_input.value !== null && percent_input.value !== "") {
-		percent_select.disabled = true;
-		if (percent_input.value >= 100) {
-			return percent_input.value;
+	var perc_input = $("#percent_input").val();
+	if (perc_input !== null && perc_input !== "") {
+		$("#percent_select").prop("disabled", true);
+		if (perc_input >= 100) {
+			return perc_input;
 		}
 		else {
-			return percent_select.value;
+			return $("#percent_select").val();
 		}
 	}
 	else {
-		percent_select.disabled = false;
-		return percent_select.value;
+		$("#percent_select").prop("disabled", false);
+		return $("#percent_select").val();
 	}
 }
 
@@ -212,8 +201,8 @@ function ajaxSend() {
 		data: JSON.stringify(users_percent_obj)
 	})
 	.done(function(data) {
-		close_button.disabled = true;
-		close_x.style.display = "none";
+		$("#close_button").prop("disabled", true);
+		$("#close_x").hide();
 
 		var refresh_job_url = data["refresh_job_url"];
 		var update_job_url = data["update_job_url"];
@@ -225,8 +214,8 @@ function ajaxSend() {
 		$(update_status).html("<p>Encountered an error. Status "+ data["status"] + "</p>");
 	})
 	.always(function(data) {
-		$(submit_button).hide();
-		$(percent_form).hide();
+		$("#submit_button").hide();
+		$("#percent_form").hide();
 		$(update_status).show();
 	});
 }
@@ -281,10 +270,10 @@ function checkRefresh(refresh_job_url, refresh_only) {
 function resetModal() {
 	clearSelectedStudents();
 	clearAlerts();
-	percent_input.value = "";
+	$("#percent_input").val("");
 
-	$(close_button).prop("disabled", false);
-	$(close_x).show();
+	$("#close_button").prop("disabled", false);
+	$("#close_x").show();
 }
 
 function checkUpdate(update_job_url) {
@@ -323,7 +312,7 @@ function checkUpdate(update_job_url) {
 			updateResultTable(data["status_msg"], data["quiz_list"], data["unchanged_list"]);
 
 			resetModal();
-			$(results_button).show();
+			$("#results_button").show();
 		}
 	})
 	.fail(function(data) {
