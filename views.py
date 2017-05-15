@@ -288,7 +288,7 @@ def update_background(course_id, extension_dict):
                 'failed',
                 error=True
             )
-            logger.warning('Unable to find course #{}'.format(course_id))
+            logger.exception('Unable to find course #{}'.format(course_id))
             return job.meta
 
         course_name = course_json.get('name', '<UNNAMED COURSE>')
@@ -478,7 +478,7 @@ def refresh_background(course_id):
                 'failed',
                 error=True
             )
-            logger.warning('Unable to find course #{}'.format(course_id))
+            logger.exception('Unable to find course #{}'.format(course_id))
 
             return job.meta
 
