@@ -14,7 +14,10 @@ dictConfig(config.LOGGING_CONFIG)
 logger = logging.getLogger('app')
 
 headers = {'Authorization': 'Bearer ' + config.API_KEY}
-json_headers = {'Authorization': 'Bearer ' + config.API_KEY, 'Content-type': 'application/json'}
+json_headers = {
+    'Authorization': 'Bearer ' + config.API_KEY,
+    'Content-type': 'application/json'
+}
 
 
 def extend_quiz(course_id, quiz, percent, user_id_list):
@@ -58,8 +61,9 @@ def extend_quiz(course_id, quiz, percent, user_id_list):
         }
         quiz_extensions['quiz_extensions'].append(user_extension)
 
+    url_str = "{}courses/{}/quizzes/{}/extensions"
     extensions_response = requests.post(
-        "%scourses/%s/quizzes/%s/extensions" % (config.API_URL, course_id, quiz_id),
+        url_str.format(config.API_URL, course_id, quiz_id),
         data=json.dumps(quiz_extensions),
         headers=json_headers
     )
@@ -92,7 +96,11 @@ def get_quizzes(course_id, per_page=config.MAX_PER_PAGE):
     :returns: A list of dictionaries representing Canvas Quiz objects.
     """
     quizzes = []
-    quizzes_url = "%scourses/%s/quizzes?per_page=%d" % (config.API_URL, course_id, per_page)
+    quizzes_url = "{}courses/{}/quizzes?per_page={}".format(
+        config.API_URL,
+        course_id,
+        per_page
+    )
 
     while True:
         quizzes_response = requests.get(quizzes_url, headers=headers)
@@ -127,7 +135,8 @@ def search_students(course_id, per_page=config.DEFAULT_PER_PAGE, page=1, search_
     :param search_term: A string to filter students by
     :type search_term: str
     """
-    users_url = "%scourses/%s/search_users?per_page=%s&page=%s&access_token=%s" % (
+    url_str = "{}courses/{}/search_users?per_page={}&page={}&access_token={}"
+    users_url = url_str.format(
         config.API_URL,
         course_id,
         per_page,
@@ -204,7 +213,8 @@ def get_course(course_id):
     :rtype: dict
     :returns: A dictionary representation of a Course in Canvas.
     """
-    response = requests.get(config.API_URL + 'courses/' + str(course_id), headers=headers)
+    course_url = "{}courses/{}".format(config.API_URL, course_id)
+    response = requests.get(course_url, headers=headers)
     response.raise_for_status()
 
     return response.json()
@@ -260,3 +270,12 @@ def missing_quizzes(course_id, quickcheck=False):
             break
 
     return missing_list
+
+
+def update_job(job, percent, status_msg, status, error=False):
+    job.meta['percent'] = percent
+    job.meta['status'] = status
+    job.meta['status_msg'] = status_msg
+    job.meta['error'] = error
+
+    job.save()
