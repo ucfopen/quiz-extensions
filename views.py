@@ -224,7 +224,7 @@ def job_status(job_key):
             status=200
         )
     elif job.is_failed:
-        logger.error("Job {} failed.".format(job_key))
+        logger.error("Job {} failed.\n{}".format(job_key, job.exc_info))
         return Response(
             json.dumps({
                 'error': True,
