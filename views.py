@@ -24,7 +24,7 @@ from utils import (
 )
 
 conn = redis.from_url(config.REDIS_URL)
-q = Queue(connection=conn)
+q = Queue('quizext', connection=conn)
 
 app = Flask(__name__)
 
