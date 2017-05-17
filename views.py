@@ -500,10 +500,13 @@ def refresh_background(course_id):
 
         percent_user_map = defaultdict(list)
 
+        inactive_list = []
+
         update_job(job, 0, 'Getting past extensions.', 'processing', False)
         for extension in course.extensions:
             # If extension is inactive, ignore.
             if not extension.active:
+                inactive_list.append(extension.user.sortable_name)
                 logger.debug('Extension #{} is inactive.'.format(
                     extension.id
                 ))
@@ -548,6 +551,20 @@ def refresh_background(course_id):
                 continue
 
             percent_user_map[extension.percent].append(user_canvas_id)
+
+        if len(percent_user_map) < 1:
+            msg_str = (
+                'No active extensions were found. Extensions for the following'
+                ' students are inactive:\n{}'
+            )
+            update_job(
+                job,
+                0,
+                msg_str.format("<br>".join(inactive_list)),
+                'failed',
+                error=True
+            )
+            return job.meta
 
         for index, quiz in enumerate(quizzes):
             quiz_id = quiz.get('id', None)
