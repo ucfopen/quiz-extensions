@@ -1,4 +1,3 @@
-import json
 import logging
 
 from flask import url_for, session
@@ -833,7 +832,11 @@ class ViewTests(flask_testing.TestCase):
         m.register_uri(
             'GET',
             '/api/v1/courses/1/users/12345',
-            json={'id': 12345, 'sortable_name': 'John Smith'}
+            json={
+                'id': 12345,
+                'sortable_name': 'John Smith',
+                'enrollments': [{'type': 'StudentEnrollment'}]
+            }
         )
 
         course = Course(course_id, course_name='Example Course')

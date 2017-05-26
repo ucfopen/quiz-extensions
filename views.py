@@ -553,16 +553,18 @@ def refresh_background(course_id):
             percent_user_map[extension.percent].append(user_canvas_id)
 
         if len(percent_user_map) < 1:
-            msg_str = (
-                'No active extensions were found. Extensions for the following'
-                ' students are inactive:\n{}'
-            )
+            msg_str = 'No active extensions were found.<br>'
+
+            if len(inactive_list) > 0:
+                msg_str += ' Extensions for the following students are inactive:<br>{}'
+                msg_str = msg_str.format("<br>".join(inactive_list))
+
             update_job(
                 job,
-                0,
-                msg_str.format("<br>".join(inactive_list)),
-                'failed',
-                error=True
+                100,
+                msg_str,
+                'complete',
+                error=False
             )
             return job.meta
 
