@@ -689,8 +689,19 @@ def lti_tool():
     """
     Bootstrapper for lti.
     """
-    course_id = request.form.get('custom_canvas_course_id')
-    canvas_user_id = request.form.get('custom_canvas_user_id')
+    course_id = request.values.get('custom_canvas_course_id')
+    canvas_user_id = request.values.get('custom_canvas_user_id')
+    canvas_domain = request.values.get('custom_canvas_api_domain')
+
+    if canvas_domain not in config.ALLOWED_CANVAS_DOMAINS:
+        msg = (
+            '<p>This tool is only available from the following domain(s):<br/>{}</p>'
+            '<p>You attempted to access from this domain:<br/>{}</p>'
+        )
+        return render_template(
+            'error.html',
+            message=msg.format(', '.join(config.ALLOWED_CANVAS_DOMAINS), canvas_domain),
+        )
 
     roles = request.form.get('ext_roles', [])
     if "Administrator" not in roles and "Instructor" not in roles:

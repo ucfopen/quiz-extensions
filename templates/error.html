@@ -1,5 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
 <h1 class="text-center">ERROR:</h1>
-<p class="text-center">{{ message }}</p>
+
+{% autoescape false %}
+<div class="text-center">{{ message }}</div>
+{% endautoescape %}
+
 {% endblock %}

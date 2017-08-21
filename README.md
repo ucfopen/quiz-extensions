@@ -64,6 +64,15 @@ Migrate database
 Run the server
 
 	flask run
+
+Ensure Redis is running. If not, start it with
+
+	redis-server --daemonize yes
+
+Ensure RQ Worker is running. If not, start it with
+
+	rq worker quizext
+
 	
 Production Installation
 ------------

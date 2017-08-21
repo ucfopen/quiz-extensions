@@ -1,6 +1,8 @@
 API_URL = ''  # Canvas API URL (e.g. 'http://example.com/api/v1/')
 API_KEY = ''  # Canvas API Key
 
+ALLOWED_CANVAS_DOMAINS = []  # A list of domains that are allowed to use the tool. (e.g. ['example.com', 'example.edu'])
+
 DEFAULT_PER_PAGE = 10  # The default number of objects the Canvas API will return per page (usually 10)
 MAX_PER_PAGE = 100  # The maximum amount of objects the Canvas API will return per page (usually 100)
 
