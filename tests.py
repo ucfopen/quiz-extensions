@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import logging
 
 from flask import url_for, session
@@ -1005,7 +1007,6 @@ class ViewTests(flask_testing.TestCase):
         self.assertEqual(self.get_context_variable('max_pages'), 99)
 
     def test_lti_tool_not_admin_or_instructor(self, m):
-
         user_id = 42
 
         response = self.client.post(
@@ -1013,6 +1014,7 @@ class ViewTests(flask_testing.TestCase):
             data={
                 'custom_canvas_course_id': 'test',
                 'custom_canvas_user_id': user_id,
+                'custom_canvas_api_domain': '192.168.99.100:3000',
                 'ext_roles': []
             }
         )
@@ -1024,7 +1026,6 @@ class ViewTests(flask_testing.TestCase):
         )
 
     def test_lti_tool(self, m):
-
         user_id = 42
 
         with self.client as c:
@@ -1033,12 +1034,12 @@ class ViewTests(flask_testing.TestCase):
                 data={
                     'custom_canvas_course_id': 'test',
                     'custom_canvas_user_id': user_id,
+                    'custom_canvas_api_domain': '192.168.99.100:3000',
                     'ext_roles': 'Administrator'
                 }
             )
             self.assert200(response)
-            self.assertTrue(session['is_admin'])
-            # self.assertEqual(session['canvas_user_id'], user_id)
+            self.assertTrue(session.get('is_admin', False))
 
 
 @requests_mock.Mocker()
