@@ -539,6 +539,7 @@ def refresh_background(course_id):
                     ))
                     extension.active = False
                     db.session.commit()
+                    inactive_list.append(extension.user.sortable_name)
                     continue
 
             except requests.exceptions.HTTPError:
@@ -550,6 +551,7 @@ def refresh_background(course_id):
                 )
                 extension.active = False
                 db.session.commit()
+                inactive_list.append(extension.user.sortable_name)
                 continue
 
             percent_user_map[extension.percent].append(user_canvas_id)
