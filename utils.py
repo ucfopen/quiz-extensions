@@ -150,7 +150,8 @@ def search_students(course_id, per_page=config.DEFAULT_PER_PAGE, page=1, search_
         users_url,
         data={
             'search_term': search_term,
-            'enrollment_type': 'student'
+            'enrollment_type': 'student',
+            'enrollment_state': ['active']
         },
         headers=headers,
     )
