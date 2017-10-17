@@ -374,7 +374,7 @@ def update_background(course_id, extension_dict):
             quiz_id = quiz.get('id', None)
             quiz_title = quiz.get('title', "[UNTITLED QUIZ]")
 
-            comp_perc = int(((float(index))/float(num_quizzes)) * 100)
+            comp_perc = int(((float(index)) / float(num_quizzes)) * 100)
             updating_str = 'Updating quiz #{} - {} [{} of {}]'
             update_job(
                 job,
@@ -525,18 +525,18 @@ def refresh_background(course_id):
                 # Skip user if not a student. Fixes an edge case where a
                 # student that previously recieved an extension changes roles.
                 enrolls = canvas_user.get('enrollments', [])
-                type_list = [e['type'] for e in enrolls]
+                type_list = [e['type'] for e in enrolls if e['enrollment_state'] == 'active']
                 if not any(t == 'StudentEnrollment' for t in type_list):
                     logger.info((
-                        "User #{} was found in course #{}, but is not a "
-                        "student. Deactivating extension #{}. Roles found: {}"
-                        ).format(
-                            user_canvas_id,
-                            course_id,
-                            extension.id,
-                            ", ".join(type_list) if len(enrolls) > 0 else None
-                        )
-                    )
+                        "User #{} was found in course #{}, but is not an "
+                        "active student. Deactivating extension #{}. Roles "
+                        "found: {}"
+                    ).format(
+                        user_canvas_id,
+                        course_id,
+                        extension.id,
+                        ", ".join(type_list) if len(enrolls) > 0 else None
+                    ))
                     extension.active = False
                     db.session.commit()
                     continue
@@ -574,7 +574,7 @@ def refresh_background(course_id):
             quiz_id = quiz.get('id', None)
             quiz_title = quiz.get('title', '[UNTITLED QUIZ]')
 
-            comp_perc = int(((float(index))/float(num_quizzes)) * 100)
+            comp_perc = int(((float(index)) / float(num_quizzes)) * 100)
             refreshing_str = 'Refreshing quiz #{} - {} [{} of {}]'
             update_job(
                 job,
@@ -738,7 +738,7 @@ def lti_tool():
             params=request.form
         )
 
-    if time() - int(tool_provider.oauth_timestamp) > 60*60:
+    if time() - int(tool_provider.oauth_timestamp) > 60 * 60:
         return render_template('error.html', message='Your request is too old.')
 
     # This does truly check anything, it's just here to remind you  that real

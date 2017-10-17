@@ -52,7 +52,7 @@ def extend_quiz(course_id, quiz, percent, user_id_list):
             'added_time': None
         }
 
-    added_time = int(math.ceil(time_limit * ((float(percent)-100) / 100) if percent else 0))
+    added_time = int(math.ceil(time_limit * ((float(percent) - 100) / 100) if percent else 0))
 
     quiz_extensions = defaultdict(list)
 
