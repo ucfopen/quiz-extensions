@@ -1,19 +1,26 @@
 API_URL = ''  # Canvas API URL (e.g. 'http://example.com/api/v1/')
 API_KEY = ''  # Canvas API Key
 
-ALLOWED_CANVAS_DOMAINS = []  # A list of domains that are allowed to use the tool. (e.g. ['example.com', 'example.edu'])
+# A list of domains that are allowed to use the tool.
+# (e.g. ['example.com', 'example.edu'])
+ALLOWED_CANVAS_DOMAINS = []
 
-DEFAULT_PER_PAGE = 10  # The default number of objects the Canvas API will return per page (usually 10)
-MAX_PER_PAGE = 100  # The maximum amount of objects the Canvas API will return per page (usually 100)
+# The default number of objects the Canvas API will return per page (usually 10)
+DEFAULT_PER_PAGE = 10
+# The maximum amount of objects the Canvas API will return per page (usually 100)
+MAX_PER_PAGE = 100
 
-SECRET_KEY = ''  # A secret key used by Flask for signing. KEEP THIS SECRET! (e.g. 'Ro0ibrkb4Z4bZmz1f5g1+/16K19GH/pa')
+# A secret key used by Flask for signing. KEEP THIS SECRET!
+# (e.g. 'Ro0ibrkb4Z4bZmz1f5g1+/16K19GH/pa')
+SECRET_KEY = ''
 
 LTI_KEY = ''  # Consumer Key
 LTI_SECRET = ''  # Shared Secret
 
 LTI_TOOL_ID = ''  # A unique ID for the tool
 
-SQLALCHEMY_DATABASE_URI = ''  # URI for database. (e.g. 'mysql://root:root@localhost/quiz_extensions')
+# URI for database. (e.g. 'mysql://root:root@localhost/quiz_extensions')
+SQLALCHEMY_DATABASE_URI = ''
 
 GOOGLE_ANALYTICS = ''  # The Google Analytics ID to use.
 
