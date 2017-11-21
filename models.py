@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+
+from __future__ import unicode_literals
+
 from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
@@ -27,7 +31,7 @@ class User(db.Model):
         self.sortable_name = sortable_name
 
     def __repr__(self):
-        return '<User {}>'.format(self.sortable_name)
+        return '<User {}>'.format(self.sortable_name)  # pragma: no cover
 
 
 class Course(db.Model):
@@ -57,12 +61,13 @@ class Course(db.Model):
         self.course_name = course_name
 
     def __repr__(self):
-        return '<Course {}>'.format(self.course_name)
+        return '<Course {}>'.format(self.course_name)  # pragma: no cover
 
 
 class Extension(db.Model):
     __tablename__ = 'extension'
     id = db.Column(db.Integer, primary_key=True)
+    active = db.Column(db.Boolean, default=True, nullable=False)
     course_id = db.Column(db.Integer, db.ForeignKey('course.id'))
     created_date = db.Column(db.DateTime, server_default=db.func.now())
     last_updated_date = db.Column(

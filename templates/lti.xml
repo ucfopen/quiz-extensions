@@ -6,6 +6,9 @@
     <blti:launch_url>{{ url_for('lti_tool', _external=True) }}</blti:launch_url>
     <blti:extensions platform="canvas.instructure.com">
         <lticm:property name="domain">{{ domain }}</lticm:property>
+        <lticm:options name="custom_fields">
+           <lticm:property name="canvas_api_domain">$Canvas.api.domain</lticm:property>
+        </lticm:options>
         <lticm:options name="course_navigation">
             <lticm:property name="enabled">true</lticm:property>
 

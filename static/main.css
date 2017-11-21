@@ -61,3 +61,12 @@ footer {
 td {
     text-align: left;
 }
+
+.status-perc {
+    font-size: 30px;
+}
+
+.user {
+    padding-left: 20px;
+    padding-right: 20px;
+}

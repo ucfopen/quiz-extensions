@@ -1,145 +1,203 @@
-A self-service LTI for faculty to easily extend time for multiple users for all quizzes at once.
+A self-service LTI for faculty to easily extend time for multiple users for
+all quizzes at once.
 
-Development Installation
-------------
+# Table of Contents
 
-	git clone git@github.com:ucfcdl/quiz-extensions-license.git
+* [Installation](#installation)
+  * [Development Installation](#development-installation)
+  * [Production Installation](#production-installation)
+* [Third Party Licenses](#third-party-licenses)
+
+# Installation
+
+## Development Installation
+
+```sh
+git clone git@github.com:ucfcdl/quiz-extensions-license.git
+```
 
 Switch into the new directory
 
-	cd quiz-extensions-license
+```sh
+cd quiz-extensions-license
+```
 
 Create the config file from the template
 
-	cp config.py.template config.py
+```sh
+cp config.py.template config.py
+```
 
 Fill in the config file
 
-	DEBUG = False  # Leave False on production
+```python
+API_URL = ''  # Canvas API URL (e.g. 'http://example.com/api/v1/')
+API_KEY = ''  # Canvas API Key
 
-	API_URL = ''  # Canvas API URL (e.g. 'http://example.com/api/v1/')
-	API_KEY = ''  # Canvas API Key
+# The default number of objects the Canvas API will return per page (usually 10)
+DEFAULT_PER_PAGE = 10
+# The maximum amount of objects the Canvas API will return per page (usually 100)
+MAX_PER_PAGE = 100
 
-	DEFAULT_PER_PAGE = 10  # The default number of objects the Canvas API will return per page (usually 10)
-	MAX_PER_PAGE = 100  # The maximum amount of objects the Canvas API will return per page (usually 100)
+# A secret key used by Flask for signing. KEEP THIS SECRET! (e.g. 'Ro0ibrkb4Z4bZmz1f5g1+/16K19GH/pa')
+SECRET_KEY = ''
 
-	SECRET_KEY = ''  # A secret key for signing. KEEP THIS SECRET! (e.g. 'ClU##GM0"glpghx')
+LTI_KEY = ''  # Consumer Key
+LTI_SECRET = ''  # Shared Secret
 
-	LTI_KEY = ''  # Consumer Key
-	LTI_SECRET = ''  # Shared Secret
+LTI_TOOL_ID = ''  # A unique ID for the tool
 
-	LTI_TOOL_ID = ''  # A unique ID for the tool
-	LTI_DOMAIN = ''  # Domain hosting the LTI
-	LTI_LAUNCH_URL = ''  # Launch URL for the LTI, This should match the url for `lti_tool` in views.py (e.g. 'http://example.com/launch')
+SQLALCHEMY_DATABASE_URI = ''  # URI for database. (e.g. 'mysql://root:root@localhost/quiz_extensions')
 
-	SQLALCHEMY_DATABASE_URI = ''  # URI for database. (e.g. 'mysql://root:root@localhost/quiz_extensions')
+GOOGLE_ANALYTICS = ''  # The Google Analytics ID to use.
 
+REDIS_URL = ''  # URL for the redis server (e.g. 'redis://localhost:6379')
+```
 
 Create a virtual environment
 
-	virtualenv env
+```sh
+virtualenv env
+```
 
 Source the environment
 
-	source env/bin/activate
+```sh
+source env/bin/activate
+```
 
 Install required packages
 
-- If you want to be able to run tests:
+* If you want to be able to run tests:
 
-		pip install -r test_requirements.txt
+  ```sh
+  pip install -r test_requirements.txt
+  ```
 
-- Otherwise,
+* Otherwise,
 
-		pip install -r requirements.txt
+  ```sh
+  pip install -r requirements.txt`
+  ```
 
 Set `FLASK_APP` environment variable
 
-	export FLASK_APP=views.py
+```sh
+export FLASK_APP=views.py
+```
 
 Migrate database
 
-	flask db upgrade
+```sh
+flask db upgrade`
+```
 
 Run the server
 
-	flask run
-	
-Production Installation
-------------
+```sh
+flask run
+```
 
-This is for an Ubuntu 16.xx install but should work for other Debian/ubuntu based installs using Apache and mod_wsgi
+Ensure Redis is running. If not, start it with
 
-	sudo apt-get update
-	sudo apt-get install libapache2-mod-wsgi python-dev apache2 python-setuptools python-pip python-virtualenv libxml2-dev libxslt1-dev zlib1g-dev
+```sh
+redis-server --daemonize yes
+```
 
-	sudo a2enmod wsgi 
-	sudo service apache2 restart
+Ensure RQ Worker is running. If not, start it with
 
-	cd /var/www/
+```sh
+rq worker quizext
+```
 
-	sudo git clone git@github.com:ucfcdl/quiz-extensions-license.git
+## Production Installation
 
-	cd quiz-extensions-license/
+This is for an Ubuntu 16.xx install but should work for other Debian/ubuntu
+based installs using Apache and mod_wsgi.
 
-	sudo virtualenv env
-	source env/bin/activate
+```sh
+sudo apt-get update
+sudo apt-get install libapache2-mod-wsgi python-dev apache2 python-setuptools python-pip python-virtualenv libxml2-dev libxslt1-dev zlib1g-dev
 
-	sudo env/bin/pip install -r requirements.txt 
+sudo a2enmod wsgi
+sudo service apache2 restart
 
-	sudo nano /etc/apache2/sites-available/000-default.conf
-	
-Put this inside 000-default.conf after VirtualHost *:80:
+cd /var/www/
 
-	#QUIZ EXTENSION CODE
-	Alias quiz-ext/static /var/www/quiz-extensions-license/static
-	<Directory /var/www/quiz-extensions-license/static>
-		Require all granted
-	</Directory>
-	
-	<Directory /var/www/quiz-extensions-license>
-		<Files wsgi.py>
-		    Require all granted
-		</Files>
-	</Directory>
-	
-	
-	WSGIDaemonProcess quiz-ext 
-	WSGIProcessGroup quiz-ext
-	WSGIScriptAlias /quiz-ext /var/www/quiz-extensions-license/wsgi.py
+sudo git clone git@github.com:ucfcdl/quiz-extensions-license.git
 
-And before the ending </VirtualHost>
+cd quiz-extensions-license/
+
+sudo virtualenv env
+source env/bin/activate
+
+sudo env/bin/pip install -r requirements.txt
+
+sudo nano /etc/apache2/sites-available/000-default.conf
+```
+
+Put this inside 000-default.conf after `VirtualHost *:80` And before the ending `</VirtualHost>`:
+
+```apache
+#QUIZ EXTENSION CODE
+Alias quiz-ext/static /var/www/quiz-extensions-license/static
+<Directory /var/www/quiz-extensions-license/static>
+    Require all granted
+</Directory>
+
+<Directory /var/www/quiz-extensions-license>
+    <Files wsgi.py>
+        Require all granted
+    </Files>
+</Directory>
+
+WSGIDaemonProcess quiz-ext
+WSGIProcessGroup quiz-ext
+WSGIScriptAlias /quiz-ext /var/www/quiz-extensions-license/wsgi.py
+```
 
 Then:
 
-	sudo service apache2 reload
+```sh
+sudo service apache2 reload
 
-	sudo cp config.py.template config.py
+sudo cp config.py.template config.py
 
-	sudo nano config.py
+sudo nano config.py
+```
 
 Edit your config.py and change the variables to match your server:
 
-	DEBUG = False  # Leave False on production
+```python
+DEBUG = False  # Leave False on production
 
-	API_URL = ''  # Canvas API URL (e.g. 'http://example.com/api/v1/')
-	API_KEY = ''  # Canvas API Key
+API_URL = ''  # Canvas API URL (e.g. 'http://example.com/api/v1/')
+API_KEY = ''  # Canvas API Key
 
-	DEFAULT_PER_PAGE = 10  # The default number of objects the Canvas API will return per page (usually 10)
-	MAX_PER_PAGE = 100  # The maximum amount of objects the Canvas API will return per page (usually 100)
+# The default number of objects the Canvas API will return per page (usually 10)
+DEFAULT_PER_PAGE = 10
+# The maximum amount of objects the Canvas API will return per page (usually 100)
+MAX_PER_PAGE = 100
 
-	SECRET_KEY = ''  # A secret key for signing. KEEP THIS SECRET! (e.g. 'ClU##GM0"glpghx')
+# A secret key used by Flask for signing. KEEP THIS SECRET! (e.g. 'Ro0ibrkb4Z4bZmz1f5g1+/16K19GH/pa')
+SECRET_KEY = ''
 
-	LTI_KEY = ''  # Consumer Key
-	LTI_SECRET = ''  # Shared Secret
+LTI_KEY = ''  # Consumer Key
+LTI_SECRET = ''  # Shared Secret
 
-	LTI_TOOL_ID = ''  # A unique ID for the tool
-	LTI_DOMAIN = ''  # Domain hosting the LTI
-	LTI_LAUNCH_URL = ''  # Launch URL for the LTI, This should match the url for `lti_tool` in views.py (e.g. 'http://example.com/launch')
+LTI_TOOL_ID = ''  # A unique ID for the tool
+LTI_DOMAIN = ''  # Domain hosting the LTI
 
-	SQLALCHEMY_DATABASE_URI = ''  # URI for database. (e.g. 'mysql://root:root@localhost/quiz_extensions')
+SQLALCHEMY_DATABASE_URI = ''  # URI for database. (e.g. 'mysql://root:root@localhost/quiz_extensions')
+```
 
 Finally:
-	
-	sudo service apache2 reload
-	
+
+```sh
+sudo service apache2 reload
+```
+
+# Third Party Licenses
+
+This project uses `ims_lti_py` which is [available on GitHub](https://github.com/tophatmonocle/ims_lti_py)
+under the MIT license.

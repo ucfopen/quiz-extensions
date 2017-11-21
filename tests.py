@@ -1,10 +1,15 @@
-import json
-import unittest
+# -*- coding: utf-8 -*-
+
+from __future__ import unicode_literals
+
+import logging
 
 from flask import url_for, session
 import flask_testing
 import requests
 import requests_mock
+import fakeredis
+from rq import Queue, SimpleWorker
 
 import config
 from models import Course, Extension, Quiz, User
@@ -17,6 +22,7 @@ class ViewTests(flask_testing.TestCase):
     def create_app(self):
         app = views.app
         app.config['TESTING'] = True
+        app.config['DEBUG'] = False
         app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/test.db'
         app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
         return app
@@ -26,9 +32,20 @@ class ViewTests(flask_testing.TestCase):
         with self.app.test_request_context():
             views.db.create_all()
 
+        self.queue = Queue(connection=fakeredis.FakeStrictRedis())
+        self.worker = SimpleWorker([self.queue], connection=self.queue.connection)
+
     def tearDown(self):
         views.db.session.remove()
         views.db.drop_all()
+
+    @classmethod
+    def setUpClass(cls):
+        logging.disable(logging.CRITICAL)
+
+    @classmethod
+    def tearDownClass(cls):
+        logging.disable(logging.NOTSET)
 
     def test_check_valid_user_no_canvas_user_id(self, m):
         @views.check_valid_user
@@ -161,24 +178,32 @@ class ViewTests(flask_testing.TestCase):
             1
         )
 
-    def test_update_no_json(self, m):
+    def test_update_background_no_json(self, m):
+        from views import update_background
+
         with self.client.session_transaction() as sess:
             sess['canvas_user_id'] = 1234
             sess['lti_logged_in'] = True
             sess['is_admin'] = True
 
         course_id = 1
-        response = self.client.post(
-            '/update/{}/'.format(course_id)
-        )
-        self.assert_200(response)
 
-        self.assertTrue(hasattr(response, 'json'))
-        self.assertIsInstance(response.json, dict)
-        self.assertTrue(response.json['error'])
-        self.assertEqual(response.json['message'], 'invalid request')
+        job = self.queue.enqueue_call(func=update_background, args=(course_id, None))
+        self.worker.work(burst=True)
 
-    def test_update_no_course(self, m):
+        self.assertTrue(job.is_finished)
+        job_result = job.result
+
+        meta_keys = ['status', 'status_msg', 'percent', 'error']
+        self.assertTrue(all(key in job_result for key in meta_keys))
+
+        self.assertEqual(job_result['status'], 'failed')
+        self.assertTrue(job_result['error'])
+        self.assertEqual(job_result['status_msg'], 'Invalid Request')
+
+    def test_update_background_no_course(self, m):
+        from views import update_background
+
         with self.client.session_transaction() as sess:
             sess['canvas_user_id'] = 1234
             sess['lti_logged_in'] = True
@@ -192,22 +217,25 @@ class ViewTests(flask_testing.TestCase):
             status_code=404
         )
 
-        response = self.client.post(
-            '/update/{}/'.format(course_id),
-            data=json.dumps({
-                'percent': '200',
-                'user_ids': ['11', '12']
-            }),
-            content_type='application/json'
+        job = self.queue.enqueue_call(
+            func=update_background,
+            args=(course_id, {'percent': '200', 'user_ids': ['11', '12']})
         )
-        self.assert_200(response)
+        self.worker.work(burst=True)
 
-        self.assertTrue(hasattr(response, 'json'))
-        self.assertIsInstance(response.json, dict)
-        self.assertTrue(response.json['error'])
-        self.assertEqual(response.json['message'], 'Course not found.')
+        self.assertTrue(job.is_finished)
+        job_result = job.result
 
-    def test_update_no_percent(self, m):
+        meta_keys = ['status', 'status_msg', 'percent', 'error']
+        self.assertTrue(all(key in job_result for key in meta_keys))
+
+        self.assertEqual(job_result['status'], 'failed')
+        self.assertTrue(job_result['error'])
+        self.assertEqual(job_result['status_msg'], 'Course not found.')
+
+    def test_update_background_no_percent(self, m):
+        from views import update_background
+
         with self.client.session_transaction() as sess:
             sess['canvas_user_id'] = 1234
             sess['lti_logged_in'] = True
@@ -221,21 +249,25 @@ class ViewTests(flask_testing.TestCase):
             json={'id': 1, 'name': 'Example Course'}
         )
 
-        response = self.client.post(
-            '/update/{}/'.format(course_id),
-            data=json.dumps({
-                'user_ids': ['11', '12']
-            }),
-            content_type="application/json"
+        job = self.queue.enqueue_call(
+            func=update_background,
+            args=(course_id, {'user_ids': ['11', '12']})
         )
-        self.assert_200(response)
+        self.worker.work(burst=True)
 
-        self.assertTrue(hasattr(response, 'json'))
-        self.assertIsInstance(response.json, dict)
-        self.assertTrue(response.json['error'])
-        self.assertEqual(response.json['message'], 'percent required')
+        self.assertTrue(job.is_finished)
+        job_result = job.result
 
-    def test_update_refresh_error(self, m):
+        meta_keys = ['status', 'status_msg', 'percent', 'error']
+        self.assertTrue(all(key in job_result for key in meta_keys))
+
+        self.assertEqual(job_result['status'], 'failed')
+        self.assertTrue(job_result['error'])
+        self.assertEqual(job_result['status_msg'], '`percent` field required.')
+
+    def test_update_background_refresh_error(self, m):
+        from views import update_background
+
         with self.client.session_transaction() as sess:
             sess['canvas_user_id'] = 1234
             sess['lti_logged_in'] = True
@@ -258,13 +290,21 @@ class ViewTests(flask_testing.TestCase):
         )
         m.register_uri(
             'GET',
-            '/api/v1/users/11',
-            json={'id': 11, 'sortable_name': 'Joe Schmoe'}
+            '/api/v1/courses/1/users/11',
+            json={
+                'id': 11,
+                'sortable_name': 'Joe Smyth',
+                'enrollments': [{'type': 'StudentEnrollment'}]
+            }
         )
         m.register_uri(
             'GET',
-            '/api/v1/users/12',
-            json={'id': 12, 'sortable_name': 'Jack Smith'}
+            '/api/v1/courses/1/users/12',
+            json={
+                'id': 12,
+                'sortable_name': 'Jack Smith',
+                'enrollments': [{'type': 'StudentEnrollment'}]
+            }
         )
         m.register_uri(
             'POST',
@@ -275,7 +315,7 @@ class ViewTests(flask_testing.TestCase):
         course = Course(course_id, course_name='Example Course')
         views.db.session.add(course)
 
-        user = User(11, sortable_name='Joe Schmoe')
+        user = User(11, sortable_name='Joe Smyth')
         views.db.session.add(user)
         user2 = User(12, sortable_name='Jack Smith')
         views.db.session.add(user2)
@@ -289,28 +329,28 @@ class ViewTests(flask_testing.TestCase):
 
         views.db.session.commit()
 
-        response = self.client.post(
-            '/update/{}/'.format(course_id),
-            data=json.dumps({
-                'percent': '200',
-                'user_ids': ['11', '12']
-            }),
-            content_type="application/json"
+        job = self.queue.enqueue_call(
+            func=update_background,
+            args=(course_id, {'percent': '200', 'user_ids': ['11', '12']})
         )
-        self.assert_200(response)
-        self.assertTrue(hasattr(response, 'json'))
-        self.assertIsInstance(response.json, dict)
-        self.assertTrue(response.json['error'])
+        self.worker.work(burst=True)
+
+        self.assertTrue(job.is_finished)
+        job_result = job.result
+
+        meta_keys = ['status', 'status_msg', 'percent', 'error']
+        self.assertTrue(all(key in job_result for key in meta_keys))
+
+        self.assertEqual(job_result['status'], 'failed')
+        self.assertTrue(job_result['error'])
         self.assertEqual(
-            response.json['message'],
-            (
-                'Some quizzes couldn\'t be updated. '
-                'Error creating extension for quiz #4. '
-                'Canvas status code: 404'
-            )
+            job_result['status_msg'],
+            'Error creating extension for quiz #4. Canvas status code: 404'
         )
 
-    def test_update_no_quizzes(self, m):
+    def test_update_background_no_quizzes(self, m):
+        from views import update_background
+
         with self.client.session_transaction() as sess:
             sess['canvas_user_id'] = 1234
             sess['lti_logged_in'] = True
@@ -330,18 +370,18 @@ class ViewTests(flask_testing.TestCase):
         )
         m.register_uri(
             'GET',
-            '/api/v1/users/11',
-            json={'id': 11, 'sortable_name': 'Joe Schmoe'}
+            '/api/v1/courses/1/users/11',
+            json={'id': 11, 'sortable_name': 'Joe Smyth'}
         )
         m.register_uri(
             'GET',
-            '/api/v1/users/12',
+            '/api/v1/courses/1/users/12',
             json={'id': 12, 'sortable_name': 'Jack Smith'}
         )
         course = Course(course_id, course_name='Example Course')
         views.db.session.add(course)
 
-        user = User(11, sortable_name='Joe Schmoe')
+        user = User(11, sortable_name='Joe Smyth')
         views.db.session.add(user)
         user2 = User(12, sortable_name='Jack Smith')
         views.db.session.add(user2)
@@ -355,24 +395,28 @@ class ViewTests(flask_testing.TestCase):
 
         views.db.session.commit()
 
-        response = self.client.post(
-            '/update/{}/'.format(course_id),
-            data=json.dumps({
-                'percent': '200',
-                'user_ids': ['11', '12']
-            }),
-            content_type="application/json"
+        job = self.queue.enqueue_call(
+            func=update_background,
+            args=(course_id, {'percent': '200', 'user_ids': ['11', '12']})
         )
-        self.assert_200(response)
-        self.assertTrue(hasattr(response, 'json'))
-        self.assertIsInstance(response.json, dict)
-        self.assertTrue(response.json['error'])
+        self.worker.work(burst=True)
+
+        self.assertTrue(job.is_finished)
+        job_result = job.result
+
+        meta_keys = ['status', 'status_msg', 'percent', 'error']
+        self.assertTrue(all(key in job_result for key in meta_keys))
+
+        self.assertEqual(job_result['status'], 'failed')
+        self.assertTrue(job_result['error'])
         self.assertEqual(
-            response.json['message'],
+            job_result['status_msg'],
             'Sorry, there are no quizzes for this course.'
         )
 
-    def test_update_extension_error(self, m):
+    def test_update_background_extension_error(self, m):
+        from views import update_background
+
         with self.client.session_transaction() as sess:
             sess['canvas_user_id'] = 1234
             sess['lti_logged_in'] = True
@@ -397,26 +441,27 @@ class ViewTests(flask_testing.TestCase):
         )
         m.register_uri(
             'GET',
-            '/api/v1/users/11',
-            json={'id': 11, 'sortable_name': 'Joe Schmoe'}
+            '/api/v1/courses/1/users/11',
+            json={'id': 11, 'sortable_name': 'Joe Smyth'}
         )
         m.register_uri(
             'GET',
-            '/api/v1/users/12',
+            '/api/v1/courses/1/users/12',
             status_code=404
         )
         m.register_uri(
             'GET',
-            '/api/v1/users/13',
-            json={'id': 13, 'sortable_name': 'Jack Smith'}
+            '/api/v1/courses/1/users/13',
+            json={
+                'id': 13,
+                'sortable_name': 'Jack Smith',
+                'enrollments': [{'type': 'StudentEnrollment'}]
+            }
         )
         m.register_uri(
             'POST',
             '/api/v1/courses/1/quizzes/4/extensions',
-            [
-                {'status_code': 200},  # 200 when refreshing
-                {'status_code': 404},  # 404 when updating
-            ]
+            status_code=404
         )
         m.register_uri(
             'POST',
@@ -427,7 +472,7 @@ class ViewTests(flask_testing.TestCase):
         course = Course(course_id, course_name='Example Course')
         views.db.session.add(course)
 
-        user = User(11, sortable_name='Joe Schmoe')
+        user = User(11, sortable_name='Joe Smyth')
         views.db.session.add(user)
         user2 = User(13, sortable_name='Jack Smith')
         views.db.session.add(user2)
@@ -441,24 +486,28 @@ class ViewTests(flask_testing.TestCase):
 
         views.db.session.commit()
 
-        response = self.client.post(
-            '/update/{}/'.format(course_id),
-            data=json.dumps({
-                'percent': '200',
-                'user_ids': ['11', '12', '13']
-            }),
-            content_type="application/json"
+        job = self.queue.enqueue_call(
+            func=update_background,
+            args=(course_id, {'percent': '200', 'user_ids': ['11', '12', '13']})
         )
-        self.assert_200(response)
-        self.assertTrue(hasattr(response, 'json'))
-        self.assertIsInstance(response.json, dict)
-        self.assertTrue(response.json['error'])
+        self.worker.work(burst=True)
+
+        self.assertTrue(job.is_finished)
+        job_result = job.result
+
+        meta_keys = ['status', 'status_msg', 'percent', 'error']
+        self.assertTrue(all(key in job_result for key in meta_keys))
+
+        self.assertEqual(job_result['status'], 'failed')
+        self.assertTrue(job_result['error'])
         self.assertEqual(
-            response.json['message'],
+            job_result['status_msg'],
             'Error creating extension for quiz #4. Canvas status code: 404'
         )
 
-    def test_update(self, m):
+    def test_update_background(self, m):
+        from views import update_background
+
         with self.client.session_transaction() as sess:
             sess['canvas_user_id'] = 1234
             sess['lti_logged_in'] = True
@@ -483,17 +532,17 @@ class ViewTests(flask_testing.TestCase):
         )
         m.register_uri(
             'GET',
-            '/api/v1/users/11',
-            json={'id': 11, 'sortable_name': 'Joe Schmoe'}
+            '/api/v1/courses/1/users/11',
+            json={'id': 11, 'sortable_name': 'Joe Smyth'}
         )
         m.register_uri(
             'GET',
-            '/api/v1/users/12',
+            '/api/v1/courses/1/users/12',
             status_code=404
         )
         m.register_uri(
             'GET',
-            '/api/v1/users/13',
+            '/api/v1/courses/1/users/13',
             json={'id': 13, 'sortable_name': 'Jack Smith'}
         )
         m.register_uri(
@@ -510,7 +559,7 @@ class ViewTests(flask_testing.TestCase):
         course = Course(course_id, course_name='Example Course')
         views.db.session.add(course)
 
-        user = User(11, sortable_name='Joe Schmoe')
+        user = User(11, sortable_name='Joe Smyth')
         views.db.session.add(user)
         user2 = User(13, sortable_name='Jack Smith')
         views.db.session.add(user2)
@@ -524,27 +573,32 @@ class ViewTests(flask_testing.TestCase):
 
         views.db.session.commit()
 
-        response = self.client.post(
-            '/update/{}/'.format(course_id),
-            data=json.dumps({
-                'percent': '200',
-                'user_ids': ['11', '12', '13']
-            }),
-            content_type="application/json"
+        job = self.queue.enqueue_call(
+            func=update_background,
+            args=(course_id, {'percent': '200', 'user_ids': ['11', '12', '13']})
         )
-        self.assert_200(response)
-        self.assertTrue(hasattr(response, 'json'))
-        self.assertIsInstance(response.json, dict)
-        self.assertFalse(response.json['error'])
+        self.worker.work(burst=True)
+
+        self.assertTrue(job.is_finished)
+        job_result = job.result
+
+        meta_keys = ['status', 'status_msg', 'percent', 'error']
+        self.assertTrue(all(key in job_result for key in meta_keys))
+
+        self.assertEqual(job_result['status'], 'complete')
+        self.assertFalse(job_result['error'])
+        self.assertEqual(job_result['percent'], 100)
         self.assertEqual(
-            response.json['message'],
+            job_result['status_msg'],
             (
                 'Success! 2 quizzes have been updated for 3 student(s) to have '
                 '200% time. 2 quizzes have no time limit and were left unchanged.'
             )
         )
 
-    def test_refresh_no_course(self, m):
+    def test_refresh_background_no_course(self, m):
+        from views import refresh_background
+
         with self.client.session_transaction() as sess:
             sess['canvas_user_id'] = 1234
             sess['lti_logged_in'] = True
@@ -558,15 +612,22 @@ class ViewTests(flask_testing.TestCase):
             status_code=404
         )
 
-        response = self.client.post('/refresh/{}/'.format(course_id))
-        self.assert_200(response)
+        job = self.queue.enqueue_call(func=refresh_background, args=(course_id,))
+        self.worker.work(burst=True)
 
-        self.assertTrue(hasattr(response, 'json'))
-        self.assertIsInstance(response.json, dict)
-        self.assertFalse(response.json['success'])
-        self.assertEqual(response.json['message'], 'Course not found.')
+        self.assertTrue(job.is_finished)
+        job_result = job.result
 
-    def test_refresh_no_missing_quizzes(self, m):
+        meta_keys = ['status', 'status_msg', 'percent', 'error']
+        self.assertTrue(all(key in job_result for key in meta_keys))
+        self.assertEqual(job_result['status'], 'failed')
+        self.assertEqual(job_result['status_msg'], 'Course not found.')
+        self.assertEqual(job_result['percent'], 0)
+        self.assertTrue(job_result['error'])
+
+    def test_refresh_background_no_missing_quizzes(self, m):
+        from views import refresh_background
+
         with self.client.session_transaction() as sess:
             sess['canvas_user_id'] = 1234
             sess['lti_logged_in'] = True
@@ -589,15 +650,23 @@ class ViewTests(flask_testing.TestCase):
         views.db.session.add(quiz)
         views.db.session.commit()
 
-        response = self.client.post('/refresh/{}/'.format(course_id))
-        self.assert_200(response)
+        job = self.queue.enqueue_call(func=refresh_background, args=(course_id,))
+        self.worker.work(burst=True)
 
-        self.assertTrue(hasattr(response, 'json'))
-        self.assertIsInstance(response.json, dict)
-        self.assertTrue(response.json['success'])
-        self.assertEqual(response.json['message'], 'No quizzes require updates.')
+        self.assertTrue(job.is_finished)
+        job_result = job.result
 
-    def test_refresh_update_error(self, m):
+        meta_keys = ['status', 'status_msg', 'percent', 'error']
+        self.assertTrue(all(key in job_result for key in meta_keys))
+
+        self.assertEqual(job_result['status'], 'complete')
+        self.assertEqual(job_result['status_msg'], 'Complete. No quizzes required updates.')
+        self.assertEqual(job_result['percent'], 100)
+        self.assertFalse(job_result['error'])
+
+    def test_refresh_background_update_error(self, m):
+        from views import refresh_background
+
         with self.client.session_transaction() as sess:
             sess['canvas_user_id'] = 1234
             sess['lti_logged_in'] = True
@@ -620,6 +689,15 @@ class ViewTests(flask_testing.TestCase):
             '/api/v1/courses/1/quizzes/1/extensions',
             status_code=404
         )
+        m.register_uri(
+            'GET',
+            '/api/v1/courses/1/users/12345',
+            json={
+                'id': 12345,
+                'sortable_name': 'John Smith',
+                'enrollments': [{'type': 'StudentEnrollment'}]
+            }
+        )
 
         course = Course(course_id, course_name='Example Course')
         views.db.session.add(course)
@@ -633,21 +711,95 @@ class ViewTests(flask_testing.TestCase):
         views.db.session.add(ext)
         views.db.session.commit()
 
-        response = self.client.post('/refresh/{}/'.format(course_id))
-        self.assert_200(response)
+        job = self.queue.enqueue_call(func=refresh_background, args=(course_id,))
+        self.worker.work(burst=True)
 
-        self.assertTrue(hasattr(response, 'json'))
-        self.assertIsInstance(response.json, dict)
-        self.assertFalse(response.json['success'])
+        self.assertTrue(job.is_finished)
+        job_result = job.result
+
+        meta_keys = ['status', 'status_msg', 'percent', 'error']
+        self.assertTrue(all(key in job_result for key in meta_keys))
+
+        self.assertEqual(job_result['status'], 'failed')
+        self.assertTrue(job_result['error'])
         self.assertEqual(
-            response.json['message'],
+            job_result['status_msg'],
             (
-                'Some quizzes couldn\'t be updated. Error creating extension for '
-                'quiz #1. Canvas status code: 404'
+                'Some quizzes couldn\'t be updated. Error creating extension '
+                'for quiz #1. Canvas status code: 404'
             )
         )
 
-    def test_refresh_update_success(self, m):
+    def test_refresh_background_inactive_user(self, m):
+        from views import refresh_background
+
+        with self.client.session_transaction() as sess:
+            sess['canvas_user_id'] = 1234
+            sess['lti_logged_in'] = True
+            sess['is_admin'] = True
+
+        course_id = 1
+        user_id = 9001
+
+        m.register_uri(
+            'GET',
+            '/api/v1/courses/{}'.format(course_id),
+            json={
+                'id': course_id,
+                'name': 'Example Course'
+            }
+        )
+        m.register_uri(
+            'GET',
+            '/api/v1/courses/{}/quizzes'.format(course_id),
+            json=[
+                {'id': 1, 'title': 'Quiz 1', 'time_limit': 10},
+                {'id': 2, 'title': 'Quiz 2', 'time_limit': 30}
+            ]
+        )
+        m.register_uri(
+            'POST',
+            '/api/v1/courses/{}/quizzes/1/extensions'.format(course_id),
+            status_code=200
+        )
+        m.register_uri(
+            'POST',
+            '/api/v1/courses/{}/quizzes/2/extensions'.format(course_id),
+            status_code=200
+        )
+        m.register_uri(
+            'GET',
+            '/api/v1/courses/{}/users/{}'.format(course_id, user_id),
+            status_code=404
+        )
+
+        course = Course(course_id, course_name='Example Course')
+        views.db.session.add(course)
+        user = User(user_id, sortable_name="Missing User")
+        views.db.session.add(user)
+
+        views.db.session.commit()
+
+        ext = Extension(course.id, user.id)
+        views.db.session.add(ext)
+
+        views.db.session.commit()
+
+        # Check that the extension is active first
+        self.assertTrue(ext.active)
+        ext_id = ext.id
+
+        job = self.queue.enqueue_call(func=refresh_background, args=(course_id,))
+        self.worker.work(burst=True)
+        self.assertTrue(job.is_finished)
+
+        # Ensure extension has been marked as inactive.
+        extension = views.db.session.query(Extension).filter_by(id=ext_id).first()
+        self.assertFalse(extension.active)
+
+    def test_refresh_background_update_success(self, m):
+        from views import refresh_background
+
         with self.client.session_transaction() as sess:
             sess['canvas_user_id'] = 1234
             sess['lti_logged_in'] = True
@@ -681,6 +833,15 @@ class ViewTests(flask_testing.TestCase):
             '/api/v1/courses/1/quizzes/2/extensions',
             status_code=200
         )
+        m.register_uri(
+            'GET',
+            '/api/v1/courses/1/users/12345',
+            json={
+                'id': 12345,
+                'sortable_name': 'John Smith',
+                'enrollments': [{'type': 'StudentEnrollment'}]
+            }
+        )
 
         course = Course(course_id, course_name='Example Course')
         views.db.session.add(course)
@@ -692,18 +853,29 @@ class ViewTests(flask_testing.TestCase):
 
         ext = Extension(course.id, user.id)
         views.db.session.add(ext)
+
+        # Add an inactive extension to be ignored.
+        ext_inactive = Extension(course.id, user.id)
+        ext_inactive.active = False
+        views.db.session.add(ext_inactive)
+
         views.db.session.commit()
 
-        response = self.client.post('/refresh/{}/'.format(course_id))
-        self.assert_200(response)
+        job = self.queue.enqueue_call(func=refresh_background, args=(course_id,))
+        self.worker.work(burst=True)
+        self.assertTrue(job.is_finished)
+        job_result = job.result
 
-        self.assertTrue(hasattr(response, 'json'))
-        self.assertIsInstance(response.json, dict)
-        self.assertTrue(response.json['success'])
+        meta_keys = ['status', 'status_msg', 'percent', 'error']
+        self.assertTrue(all(key in job_result for key in meta_keys))
+
+        self.assertEqual(job_result['status'], 'complete')
+        self.assertFalse(job_result['error'])
         self.assertEqual(
-            response.json['message'],
+            job_result['status_msg'],
             '2 quizzes have been updated.'
         )
+        self.assertEqual(job_result['percent'], 100)
 
     def test_missing_quizzes_check_no_course(self, m):
         course_id = 1
@@ -837,7 +1009,6 @@ class ViewTests(flask_testing.TestCase):
         self.assertEqual(self.get_context_variable('max_pages'), 99)
 
     def test_lti_tool_not_admin_or_instructor(self, m):
-
         user_id = 42
 
         response = self.client.post(
@@ -845,6 +1016,7 @@ class ViewTests(flask_testing.TestCase):
             data={
                 'custom_canvas_course_id': 'test',
                 'custom_canvas_user_id': user_id,
+                'custom_canvas_api_domain': '192.168.99.100:3000',
                 'ext_roles': []
             }
         )
@@ -855,9 +1027,7 @@ class ViewTests(flask_testing.TestCase):
             'Must be an Administrator or Instructor'
         )
 
-
     def test_lti_tool(self, m):
-
         user_id = 42
 
         with self.client as c:
@@ -866,11 +1036,12 @@ class ViewTests(flask_testing.TestCase):
                 data={
                     'custom_canvas_course_id': 'test',
                     'custom_canvas_user_id': user_id,
+                    'custom_canvas_api_domain': '192.168.99.100:3000',
                     'ext_roles': 'Administrator'
                 }
             )
-            self.assertTrue(session['is_admin'])
-            # self.assertEqual(session['canvas_user_id'], user_id)
+            self.assert200(response)
+            self.assertTrue(session.get('is_admin', False))
 
 
 @requests_mock.Mocker()
@@ -879,16 +1050,19 @@ class UtilTests(flask_testing.TestCase):
     def create_app(self):
         app = views.app
         app.config['TESTING'] = True
+        app.config['DEBUG'] = False
         app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/test.db'
         app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
         return app
 
     def setUp(self):
+        logging.disable(logging.CRITICAL)
         views.db.init_app(self.app)
         with self.app.test_request_context():
             views.db.create_all()
 
     def tearDown(self):
+        logging.disable(logging.NOTSET)
         views.db.session.remove()
         views.db.drop_all()
 
@@ -1009,6 +1183,23 @@ class UtilTests(flask_testing.TestCase):
         self.assertIsInstance(response[1], int)
         self.assertEqual(response[1], 99)
 
+    def test_search_students_malformed_response(self, m):
+        from utils import search_students
+
+        m.register_uri(
+            'GET',
+            '/api/v1/courses/1/search_users',
+        )
+        response = search_students(1)
+
+        self.assertIsInstance(response, tuple)
+
+        self.assertIsInstance(response[0], list)
+        self.assertEqual(len(response[0]), 0)
+
+        self.assertIsInstance(response[1], int)
+        self.assertEqual(response[1], 0)
+
     def test_search_students_error(self, m):
         from utils import search_students
 
@@ -1052,11 +1243,11 @@ class UtilTests(flask_testing.TestCase):
 
         m.register_uri(
             'GET',
-            '/api/v1/users/1',
+            '/api/v1/courses/1/users/1',
             json={'id': 1, 'sortable_name': 'John Smith'}
         )
 
-        response = get_user(1)
+        response = get_user(1, 1)
 
         self.assertIsInstance(response, dict)
         self.assertEqual(response['sortable_name'], 'John Smith')
@@ -1066,12 +1257,12 @@ class UtilTests(flask_testing.TestCase):
 
         m.register_uri(
             'GET',
-            '/api/v1/users/1',
+            '/api/v1/courses/1/users/1',
             status_code=404
         )
 
         with self.assertRaises(requests.exceptions.HTTPError):
-            get_user(1)
+            get_user(1, 1)
 
     def test_get_course(self, m):
         from utils import get_course
@@ -1216,6 +1407,3 @@ class UtilTests(flask_testing.TestCase):
         self.assertIsInstance(response, list)
         self.assertEqual(len(response), 1)
         self.assertEqual(response[0]['title'], 'Quiz 1')
-
-if __name__ == '__main__':
-    unittest.main()

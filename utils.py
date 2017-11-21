@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+
+from __future__ import unicode_literals
+
 from collections import defaultdict
 import json
 import math
@@ -7,9 +11,17 @@ from urlparse import parse_qs, urlsplit
 import config
 from models import Quiz
 
+import logging
+from logging.config import dictConfig
+
+dictConfig(config.LOGGING_CONFIG)
+logger = logging.getLogger('app')
 
 headers = {'Authorization': 'Bearer ' + config.API_KEY}
-json_headers = {'Authorization': 'Bearer ' + config.API_KEY, 'Content-type': 'application/json'}
+json_headers = {
+    'Authorization': 'Bearer ' + config.API_KEY,
+    'Content-type': 'application/json'
+}
 
 
 def extend_quiz(course_id, quiz, percent, user_id_list):
@@ -42,7 +54,7 @@ def extend_quiz(course_id, quiz, percent, user_id_list):
             'added_time': None
         }
 
-    added_time = int(math.ceil(time_limit * ((float(percent)-100) / 100) if percent else 0))
+    added_time = int(math.ceil(time_limit * ((float(percent) - 100) / 100) if percent else 0))
 
     quiz_extensions = defaultdict(list)
 
@@ -53,8 +65,9 @@ def extend_quiz(course_id, quiz, percent, user_id_list):
         }
         quiz_extensions['quiz_extensions'].append(user_extension)
 
+    url_str = "{}courses/{}/quizzes/{}/extensions"
     extensions_response = requests.post(
-        "%scourses/%s/quizzes/%s/extensions" % (config.API_URL, course_id, quiz_id),
+        url_str.format(config.API_URL, course_id, quiz_id),
         data=json.dumps(quiz_extensions),
         headers=json_headers
     )
@@ -87,7 +100,11 @@ def get_quizzes(course_id, per_page=config.MAX_PER_PAGE):
     :returns: A list of dictionaries representing Canvas Quiz objects.
     """
     quizzes = []
-    quizzes_url = "%scourses/%s/quizzes?per_page=%d" % (config.API_URL, course_id, per_page)
+    quizzes_url = "{}courses/{}/quizzes?per_page={}".format(
+        config.API_URL,
+        course_id,
+        per_page
+    )
 
     while True:
         quizzes_response = requests.get(quizzes_url, headers=headers)
@@ -122,7 +139,8 @@ def search_students(course_id, per_page=config.DEFAULT_PER_PAGE, page=1, search_
     :param search_term: A string to filter students by
     :type search_term: str
     """
-    users_url = "%scourses/%s/search_users?per_page=%s&page=%s&access_token=%s" % (
+    url_str = "{}courses/{}/search_users?per_page={}&page={}&access_token={}"
+    users_url = url_str.format(
         config.API_URL,
         course_id,
         per_page,
@@ -134,7 +152,8 @@ def search_students(course_id, per_page=config.DEFAULT_PER_PAGE, page=1, search_
         users_url,
         data={
             'search_term': search_term,
-            'enrollment_type': 'student'
+            'enrollment_type': 'student',
+            'enrollment_state': ['active']
         },
         headers=headers,
     )
@@ -143,12 +162,12 @@ def search_students(course_id, per_page=config.DEFAULT_PER_PAGE, page=1, search_
         user_list = users_response.json()
     except ValueError:
         # response is weird. log it!
-        # logger.exception('Error getting user list from Canvas.')
+        logger.exception('Error getting user list from Canvas.')
         return [], 0
 
     if 'errors' in user_list:
-        # msg = 'Error getting user list from Canvas. Response: {}'
-        # logger.error(msg.format(users_response))
+        msg = 'Error getting user list from Canvas. Response: {}'
+        logger.error(msg.format(users_response))
         return [], 0
 
     try:
@@ -165,16 +184,26 @@ def search_students(course_id, per_page=config.DEFAULT_PER_PAGE, page=1, search_
     return user_list, num_pages
 
 
-def get_user(user_id):
+def get_user(course_id, user_id):
     """
-    Get a user from canvas by id.
+    Get a user from canvas by id, with respect to a course.
 
+    :param user_id: ID of a Canvas course.
+    :type user_id: int
     :param user_id: ID of a Canvas user.
     :type user_id: int
     :rtype: dict
     :returns: A dictionary representation of a User in Canvas.
     """
-    response = requests.get(config.API_URL + 'users/' + str(user_id), headers=headers)
+    response = requests.get(
+        '{}courses/{}/users/{}'.format(
+            config.API_URL,
+            course_id,
+            user_id
+        ),
+        params={'include[]': 'enrollments'},
+        headers=headers
+    )
     response.raise_for_status()
 
     return response.json()
@@ -189,7 +218,8 @@ def get_course(course_id):
     :rtype: dict
     :returns: A dictionary representation of a Course in Canvas.
     """
-    response = requests.get(config.API_URL + 'courses/' + str(course_id), headers=headers)
+    course_url = "{}courses/{}".format(config.API_URL, course_id)
+    response = requests.get(course_url, headers=headers)
     response.raise_for_status()
 
     return response.json()
@@ -245,3 +275,12 @@ def missing_quizzes(course_id, quickcheck=False):
             break
 
     return missing_list
+
+
+def update_job(job, percent, status_msg, status, error=False):
+    job.meta['percent'] = percent
+    job.meta['status'] = status
+    job.meta['status_msg'] = status_msg
+    job.meta['error'] = error
+
+    job.save()
