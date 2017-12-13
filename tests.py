@@ -1016,7 +1016,7 @@ class ViewTests(flask_testing.TestCase):
             data={
                 'custom_canvas_course_id': 'test',
                 'custom_canvas_user_id': user_id,
-                'custom_canvas_api_domain': '192.168.99.100:3000',
+                'custom_canvas_api_domain': config.TESTING_API_URL,
                 'ext_roles': []
             }
         )
@@ -1036,7 +1036,7 @@ class ViewTests(flask_testing.TestCase):
                 data={
                     'custom_canvas_course_id': 'test',
                     'custom_canvas_user_id': user_id,
-                    'custom_canvas_api_domain': '192.168.99.100:3000',
+                    'custom_canvas_api_domain': config.TESTING_API_URL,
                     'ext_roles': 'Administrator'
                 }
             )

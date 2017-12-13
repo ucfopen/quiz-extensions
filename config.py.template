@@ -60,3 +60,5 @@ LOGGING_CONFIG = {
         }
     }
 }
+
+TESTING_API_URL = ''  # Used only to run tests
