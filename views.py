@@ -752,14 +752,9 @@ def lti_tool():
 
     session['canvas_user_id'] = canvas_user_id
     session['lti_logged_in'] = True
-
     session['launch_params'] = tool_provider.to_params()
-    username = tool_provider.username('Dude')
 
-    if tool_provider.is_outcome_service():
-        return render_template('assessment.html', username=username)
-    else:
-        return redirect(url_for('quiz', course_id=course_id))
+    return redirect(url_for('quiz', course_id=course_id))
 
 
 def was_nonce_used_in_last_x_minutes(nonce, minutes):

@@ -77,7 +77,7 @@ Install required packages
 * Otherwise,
 
   ```sh
-  pip install -r requirements.txt`
+  pip install -r requirements.txt
   ```
 
 Set `FLASK_APP` environment variable
@@ -89,7 +89,7 @@ export FLASK_APP=views.py
 Migrate database
 
 ```sh
-flask db upgrade`
+flask db upgrade
 ```
 
 Run the server
