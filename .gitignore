@@ -3,5 +3,6 @@
 .DS_Store
 config.py
 /venv
+/env
 /htmlcov
 /logs
