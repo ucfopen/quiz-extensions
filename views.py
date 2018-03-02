@@ -7,6 +7,7 @@ from functools import wraps
 import logging
 from logging.config import dictConfig
 import json
+from subprocess import call
 from time import time
 
 from flask import (
@@ -16,6 +17,7 @@ from flask_migrate import Migrate
 from ims_lti_py import ToolProvider
 import requests
 import redis
+from redis.exceptions import ConnectionError
 from rq import get_current_job, Queue
 from rq.job import Job
 from rq.exceptions import NoSuchJobError
@@ -120,6 +122,57 @@ def index():
     Default app index.
     """
     return "Please contact your System Administrator."
+
+
+@app.route("/status", methods=['GET'])
+def status():
+    """
+    Runs smoke tests and reports status
+    """
+
+    status = {
+        'tool': 'Quiz Extensions',
+        'checks': dict(),
+        'url': url_for('index', _external=True)
+    }
+
+    # Check index
+    response = requests.get(url_for('index', _external=True))
+    status['checks']['index'] = response.text == 'Please contact your System Administrator.'
+
+    # Check xml
+    response = requests.get(url_for('xml', _external=True))
+    status['checks']['xml'] = 'application/xml' in response.headers.get('Content-Type')
+
+    # Check redis
+    status['checks']['redis'] = False
+    try:
+        response = conn.echo('test')
+        status['checks']['redis'] = response == 'test'
+    except ConnectionError:
+        logger.exception('Redis connection failed.')
+
+    # Check DB connection
+    status['checks']['db'] = False
+    try:
+        db.session.query("1").all()
+        status['checks']['db'] = True
+    except Exception as e:
+        logger.exception('DB connection failed.')
+
+    # Check RQ Worker
+    status['checks']['worker'] = call(
+        'ps aux | grep "rq worker quizext" | grep -v grep',
+        shell=True
+    ) == 0
+
+    # Overall health check - if all checks are True
+    status['healthy'] = all(v is True for k, v in status['checks'].items())
+
+    return Response(
+        json.dumps(status),
+        mimetype='application/json'
+    )
 
 
 @app.route("/lti.xml", methods=['GET'])
