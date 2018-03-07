@@ -137,11 +137,11 @@ def status():
     }
 
     # Check index
-    response = requests.get(url_for('index', _external=True))
+    response = requests.get(url_for('index', _external=True, verify=(not app.debug)))
     status['checks']['index'] = response.text == 'Please contact your System Administrator.'
 
     # Check xml
-    response = requests.get(url_for('xml', _external=True))
+    response = requests.get(url_for('xml', _external=True, verify=(not app.debug)))
     status['checks']['xml'] = 'application/xml' in response.headers.get('Content-Type')
 
     # Check redis
