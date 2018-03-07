@@ -132,20 +132,31 @@ def status():
 
     status = {
         'tool': 'Quiz Extensions',
-        'checks': dict(),
-        'url': url_for('index', _external=True)
+        'checks': {
+            'index': False,
+            'xml': False,
+            'redis': False,
+            'db': False
+        },
+        'url': url_for('index', _external=True),
+        'debug': app.debug
     }
 
     # Check index
-    response = requests.get(url_for('index', _external=True, verify=(not app.debug)))
-    status['checks']['index'] = response.text == 'Please contact your System Administrator.'
+    try:
+        response = requests.get(url_for('index', _external=True, verify=(not app.debug)))
+        status['checks']['index'] = response.text == 'Please contact your System Administrator.'
+    except Exception as e:
+        logger.exception('Index check failed.')
 
     # Check xml
-    response = requests.get(url_for('xml', _external=True, verify=(not app.debug)))
-    status['checks']['xml'] = 'application/xml' in response.headers.get('Content-Type')
+    try:
+        response = requests.get(url_for('xml', _external=True, verify=(not app.debug)))
+        status['checks']['xml'] = 'application/xml' in response.headers.get('Content-Type')
+    except Exception as e:
+        logger.exception('XML check failed.')
 
     # Check redis
-    status['checks']['redis'] = False
     try:
         response = conn.echo('test')
         status['checks']['redis'] = response == 'test'
@@ -153,7 +164,6 @@ def status():
         logger.exception('Redis connection failed.')
 
     # Check DB connection
-    status['checks']['db'] = False
     try:
         db.session.query("1").all()
         status['checks']['db'] = True
