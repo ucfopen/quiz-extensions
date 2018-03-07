@@ -172,7 +172,7 @@ def status():
 
     # Check RQ Worker
     status['checks']['worker'] = call(
-        'ps aux | grep "rq worker quizext" | grep -v grep',
+        'ps aux | grep "rq worker" | grep "quizext" | grep -v grep',
         shell=True
     ) == 0
 
