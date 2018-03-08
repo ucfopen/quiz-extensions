@@ -135,8 +135,10 @@ def status():
         'checks': {
             'index': False,
             'xml': False,
+            'api_key': False,
             'redis': False,
-            'db': False
+            'db': False,
+            'worker': False,
         },
         'url': url_for('index', _external=True),
         'debug': app.debug
@@ -155,6 +157,13 @@ def status():
         status['checks']['xml'] = 'application/xml' in response.headers.get('Content-Type')
     except Exception as e:
         logger.exception('XML check failed.')
+
+    # Check API Key
+    try:
+        response = requests.get('{}users/self'.format(config.API_URL), headers=json_headers)
+        status['checks']['api_key'] = response.status_code == 200
+    except Exception as e:
+        logger.exception('API Key check failed.')
 
     # Check redis
     try:

@@ -95,7 +95,7 @@ flask db upgrade
 Run the server
 
 ```sh
-flask run
+flask run --with-threads
 ```
 
 Ensure Redis is running. If not, start it with
