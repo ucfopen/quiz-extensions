@@ -141,6 +141,7 @@ def status():
             'worker': False,
         },
         'url': url_for('index', _external=True),
+        'api_url': config.API_URL,
         'debug': app.debug
     }
 
@@ -160,7 +161,10 @@ def status():
 
     # Check API Key
     try:
-        response = requests.get('{}users/self'.format(config.API_URL), headers=json_headers)
+        response = requests.get(
+            '{}users/self'.format(config.API_URL),
+            headers={'Authorization': 'Bearer ' + config.API_KEY}
+        )
         status['checks']['api_key'] = response.status_code == 200
     except Exception as e:
         logger.exception('API Key check failed.')
