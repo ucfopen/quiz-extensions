@@ -13,7 +13,7 @@ all quizzes at once.
 ## Development Installation
 
 ```sh
-git clone git@github.com:ucfcdl/quiz-extensions-license.git
+git clone git@github.com:ucfopen/quiz-extensions.git
 ```
 
 Switch into the new directory
