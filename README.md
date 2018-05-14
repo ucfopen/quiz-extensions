@@ -19,7 +19,7 @@ git clone git@github.com:ucfopen/quiz-extensions.git
 Switch into the new directory
 
 ```sh
-cd quiz-extensions-license
+cd quiz-extensions
 ```
 
 Create the config file from the template
