@@ -125,7 +125,7 @@ def index():
 
 
 @app.route("/status", methods=['GET'])
-def status():
+def status():  # pragma: no cover
     """
     Runs smoke tests and reports status
     """
@@ -767,7 +767,7 @@ def filter(course_id=None):
 
 
 @app.route('/launch', methods=['POST'])
-def lti_tool():
+def lti_tool():  # pragma: no cover
     """
     Bootstrapper for lti.
     """
@@ -833,5 +833,5 @@ def lti_tool():
     return redirect(url_for('quiz', course_id=course_id))
 
 
-def was_nonce_used_in_last_x_minutes(nonce, minutes):
+def was_nonce_used_in_last_x_minutes(nonce, minutes):  # pragma: no cover
     return False

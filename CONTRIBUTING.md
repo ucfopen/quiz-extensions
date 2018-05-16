@@ -9,6 +9,7 @@ additions or changes to this document, please follow the guidelines below to
 submit them.
 
 ## Table of Contents
+
 * [Reporting Bugs and Requesting Features](#reporting-bugs-and-requesting-features)
   * [Before Submitting](#before-submitting)
   * [Submitting a Bug Report](#submitting-a-bug-report)

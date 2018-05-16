@@ -32,7 +32,7 @@ class ViewTests(flask_testing.TestCase):
         with self.app.test_request_context():
             views.db.create_all()
 
-        self.queue = Queue(connection=fakeredis.FakeStrictRedis())
+        self.queue = Queue(async=False, connection=fakeredis.FakeStrictRedis())
         self.worker = SimpleWorker([self.queue], connection=self.queue.connection)
 
     def tearDown(self):
@@ -53,7 +53,6 @@ class ViewTests(flask_testing.TestCase):
             pass  # pragma: no cover
 
         response = test_func()
-
         self.assert_template_used('error.html')
         self.assertIn('Not allowed!', response)
 
@@ -294,7 +293,7 @@ class ViewTests(flask_testing.TestCase):
             json={
                 'id': 11,
                 'sortable_name': 'Joe Smyth',
-                'enrollments': [{'type': 'StudentEnrollment'}]
+                'enrollments': [{'type': 'StudentEnrollment', 'enrollment_state': 'active'}]
             }
         )
         m.register_uri(
@@ -303,7 +302,7 @@ class ViewTests(flask_testing.TestCase):
             json={
                 'id': 12,
                 'sortable_name': 'Jack Smith',
-                'enrollments': [{'type': 'StudentEnrollment'}]
+                'enrollments': [{'type': 'StudentEnrollment', 'enrollment_state': 'active'}]
             }
         )
         m.register_uri(
@@ -455,7 +454,7 @@ class ViewTests(flask_testing.TestCase):
             json={
                 'id': 13,
                 'sortable_name': 'Jack Smith',
-                'enrollments': [{'type': 'StudentEnrollment'}]
+                'enrollments': [{'type': 'StudentEnrollment', 'enrollment_state': 'active'}]
             }
         )
         m.register_uri(
@@ -695,7 +694,7 @@ class ViewTests(flask_testing.TestCase):
             json={
                 'id': 12345,
                 'sortable_name': 'John Smith',
-                'enrollments': [{'type': 'StudentEnrollment'}]
+                'enrollments': [{'type': 'StudentEnrollment', 'enrollment_state': 'active'}]
             }
         )
 
@@ -729,6 +728,73 @@ class ViewTests(flask_testing.TestCase):
                 'for quiz #1. Canvas status code: 404'
             )
         )
+
+    def test_refresh_background_missing_user(self, m):
+        from views import refresh_background
+
+        with self.client.session_transaction() as sess:
+            sess['canvas_user_id'] = 1234
+            sess['lti_logged_in'] = True
+            sess['is_admin'] = True
+
+        course_id = 1
+        user_id = 9001
+
+        m.register_uri(
+            'GET',
+            '/api/v1/courses/{}'.format(course_id),
+            json={
+                'id': course_id,
+                'name': 'Example Course'
+            }
+        )
+        m.register_uri(
+            'GET',
+            '/api/v1/courses/{}/quizzes'.format(course_id),
+            json=[
+                {'id': 1, 'title': 'Quiz 1', 'time_limit': 10},
+                {'id': 2, 'title': 'Quiz 2', 'time_limit': 30}
+            ]
+        )
+        m.register_uri(
+            'POST',
+            '/api/v1/courses/{}/quizzes/1/extensions'.format(course_id),
+            status_code=200
+        )
+        m.register_uri(
+            'POST',
+            '/api/v1/courses/{}/quizzes/2/extensions'.format(course_id),
+            status_code=200
+        )
+        m.register_uri(
+            'GET',
+            '/api/v1/courses/{}/users/{}'.format(course_id, user_id),
+            status_code=404
+        )
+
+        course = Course(course_id, course_name='Example Course')
+        views.db.session.add(course)
+        user = User(user_id, sortable_name="Missing User")
+        views.db.session.add(user)
+
+        views.db.session.commit()
+
+        ext = Extension(course.id, user.id)
+        views.db.session.add(ext)
+
+        views.db.session.commit()
+
+        # Check that the extension is active first
+        self.assertTrue(ext.active)
+        ext_id = ext.id
+
+        job = self.queue.enqueue_call(func=refresh_background, args=(course_id,))
+        self.worker.work(burst=True)
+        self.assertTrue(job.is_finished)
+
+        # Ensure extension has been marked as inactive.
+        extension = views.db.session.query(Extension).filter_by(id=ext_id).first()
+        self.assertFalse(extension.active)
 
     def test_refresh_background_inactive_user(self, m):
         from views import refresh_background
@@ -770,7 +836,12 @@ class ViewTests(flask_testing.TestCase):
         m.register_uri(
             'GET',
             '/api/v1/courses/{}/users/{}'.format(course_id, user_id),
-            status_code=404
+            status_code=200,
+            json={
+                'id': 9001,
+                'sortable_name': 'John Smith',
+                'enrollments': [{'type': 'StudentEnrollment', 'enrollment_state': 'inactive'}]
+            }
         )
 
         course = Course(course_id, course_name='Example Course')
@@ -839,7 +910,7 @@ class ViewTests(flask_testing.TestCase):
             json={
                 'id': 12345,
                 'sortable_name': 'John Smith',
-                'enrollments': [{'type': 'StudentEnrollment'}]
+                'enrollments': [{'type': 'StudentEnrollment', 'enrollment_state': 'active'}]
             }
         )
 
@@ -1053,6 +1124,7 @@ class UtilTests(flask_testing.TestCase):
         app.config['DEBUG'] = False
         app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/test.db'
         app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+        app.config['threaded'] = True
         return app
 
     def setUp(self):
