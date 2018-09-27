@@ -124,9 +124,9 @@ sudo service apache2 restart
 
 cd /var/www/
 
-sudo git clone git@github.com:ucfcdl/quiz-extensions-license.git
+sudo git clone git@github.com:ucfopen/quiz-extensions.git
 
-cd quiz-extensions-license/
+cd quiz-extensions/
 
 sudo virtualenv env
 source env/bin/activate
@@ -201,3 +201,7 @@ sudo service apache2 reload
 
 This project uses `ims_lti_py` which is [available on GitHub](https://github.com/tophatmonocle/ims_lti_py)
 under the MIT license.
+
+## Contact Us
+
+Need help? Have an idea? Just want to say hi? Come join us on the [UCF Open Slack Channel](https://ucf-open-slackin.herokuapp.com) and join the `#quiz-extensions` channel!
