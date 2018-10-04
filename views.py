@@ -142,7 +142,8 @@ def status():  # pragma: no cover
         },
         'url': url_for('index', _external=True),
         'api_url': config.API_URL,
-        'debug': app.debug
+        'debug': app.debug,
+        'xml_url': url_for('xml', _external=True)
     }
 
     # Check index

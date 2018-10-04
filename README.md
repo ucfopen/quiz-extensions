@@ -140,12 +140,12 @@ Put this inside 000-default.conf after `VirtualHost *:80` And before the ending 
 
 ```apache
 #QUIZ EXTENSION CODE
-Alias quiz-ext/static /var/www/quiz-extensions-license/static
-<Directory /var/www/quiz-extensions-license/static>
+Alias quiz-ext/static /var/www/quiz-extensions/static
+<Directory /var/www/quiz-extensions/static>
     Require all granted
 </Directory>
 
-<Directory /var/www/quiz-extensions-license>
+<Directory /var/www/quiz-extensions>
     <Files wsgi.py>
         Require all granted
     </Files>
@@ -153,7 +153,7 @@ Alias quiz-ext/static /var/www/quiz-extensions-license/static
 
 WSGIDaemonProcess quiz-ext
 WSGIProcessGroup quiz-ext
-WSGIScriptAlias /quiz-ext /var/www/quiz-extensions-license/wsgi.py
+WSGIScriptAlias /quiz-ext /var/www/quiz-extensions/wsgi.py
 ```
 
 Then:
