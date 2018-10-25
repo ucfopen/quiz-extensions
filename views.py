@@ -144,6 +144,7 @@ def status():  # pragma: no cover
         'api_url': config.API_URL,
         'debug': app.debug,
         'xml_url': url_for('xml', _external=True)
+        'job_queue': len(q.jobs)
     }
 
     # Check index
