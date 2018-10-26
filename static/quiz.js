@@ -432,9 +432,11 @@ function ajax_check_missing_quizzes(course_id) {
 
 			if (response) {
 				missing_alert.style.display = "";
+				resizeFrame();
 			}
 			else {
 				missing_alert.style.display = "none";
+				resizeFrame();
 			}
 		}
 	};
