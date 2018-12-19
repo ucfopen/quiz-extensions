@@ -1,5 +1,11 @@
 # Change Log
 
+## [3.1.1] - 2018-12-19
+
+### Bugfixes
+
+- Pinned older versions of Redis and RQ to maintain compatibility.
+
 ## [3.1.0] - 2018-10-30
 
 ### General
@@ -38,6 +44,7 @@
 
 - Initial release
 
+[3.1.1]: https://github.com/ucfopen/quiz-extensions/compare/v3.1.0...v3.1.1
 [3.1.0]: https://github.com/ucfopen/quiz-extensions/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/ucfopen/quiz-extensions/compare/v2.0.0...v3.0.0
 [2.0.0]: https://github.com/ucfopen/quiz-extensions/compare/v1.0.0...v2.0.0
