@@ -1,3 +1,5 @@
+[![Join UCF Open Slack Discussions](https://ucf-open-slackin.herokuapp.com/badge.svg)](https://ucf-open-slackin.herokuapp.com/)
+
 A self-service LTI for faculty to easily extend time for multiple users for
 all quizzes at once.
 
