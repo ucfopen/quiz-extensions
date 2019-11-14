@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import unicode_literals
+
 
 import logging
 
@@ -32,7 +32,7 @@ class ViewTests(flask_testing.TestCase):
         with self.app.test_request_context():
             views.db.create_all()
 
-        self.queue = Queue(async=False, connection=fakeredis.FakeStrictRedis())
+        self.queue = Queue(is_async=False, connection=fakeredis.FakeStrictRedis() )
         self.worker = SimpleWorker([self.queue], connection=self.queue.connection)
 
     def tearDown(self):
@@ -143,7 +143,7 @@ class ViewTests(flask_testing.TestCase):
         response = self.client.get('/')
         self.assertEqual(
             response.data,
-            "Please contact your System Administrator."
+            b"Please contact your System Administrator."
         )
 
     def test_xml(self, m):
@@ -154,7 +154,7 @@ class ViewTests(flask_testing.TestCase):
         self.assertIn('application/xml', response.content_type)
 
         self.assert_context('tool_id', config.LTI_TOOL_ID)
-        self.assertIn(url_for('lti_tool'), response.data)
+        self.assertIn(url_for('lti_tool').encode('utf-8'), response.data)
 
     def test_quiz(self, m):
         with self.client.session_transaction() as sess:
@@ -953,7 +953,7 @@ class ViewTests(flask_testing.TestCase):
         response = self.client.get('/missing_quizzes/{}/'.format(course_id))
 
         self.assert_200(response)
-        self.assertEqual(response.data, 'false')
+        self.assertEqual(response.data, b'false')
 
     def test_missing_quizzes_check_no_extensions(self, m):
         course_id = 1
@@ -968,7 +968,7 @@ class ViewTests(flask_testing.TestCase):
         response = self.client.get('/missing_quizzes/{}/'.format(course_id))
 
         self.assert_200(response)
-        self.assertEqual(response.data, 'false')
+        self.assertEqual(response.data, b'false')
 
     def test_missing_quizzes_check_true(self, m):
         m.register_uri(
@@ -997,7 +997,7 @@ class ViewTests(flask_testing.TestCase):
         response = self.client.get('/missing_quizzes/{}/'.format(course_id))
 
         self.assert_200(response)
-        self.assertEqual(response.data, 'true')
+        self.assertEqual(response.data, b'true')
 
     def test_missing_quizzes_check_false(self, m):
         m.register_uri(
@@ -1033,7 +1033,7 @@ class ViewTests(flask_testing.TestCase):
         response = self.client.get('/missing_quizzes/{}/'.format(course_id))
 
         self.assert_200(response)
-        self.assertEqual(response.data, 'false')
+        self.assertEqual(response.data, b'false')
 
     def test_filter_no_students_found(self, m):
         with self.client.session_transaction() as sess:

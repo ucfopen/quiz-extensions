@@ -45,7 +45,7 @@ class OutcomeResponse():
             setattr(self, opt, None)
 
         # Store specified options in our options member
-        for (key, val) in kwargs.iteritems():
+        for (key, val) in kwargs.items():
             setattr(self, key, val)
 
     @staticmethod
@@ -105,7 +105,7 @@ class OutcomeResponse():
                 # Try to get the score
                 self.score = str(root.imsx_POXBody.readResultResponse.\
                         result.resultScore.textString)
-            except AttributeError, e:
+            except AttributeError as e:
                 # Not a readResult, just ignore!
                 pass
         except:

@@ -3,7 +3,7 @@ import sys
 from collections import defaultdict
 from lxml import etree, objectify
 
-from utils import InvalidLTIConfigError
+from .utils import InvalidLTIConfigError
 
 accessors = [
         'title',
@@ -46,7 +46,7 @@ class ToolConfig():
                 else defaultdict(lambda: None)
 
         # Iterate over all provided options and save to class instance members
-        for (key, val) in kwargs.iteritems():
+        for (key, val) in kwargs.items():
             setattr(self, key, val)
 
     @staticmethod
@@ -222,12 +222,12 @@ class ToolConfig():
             for (key, params) in sorted(self.extensions.items()):
                 extension_node = etree.SubElement(root, '{%s}%s' %(NSMAP['blti'],
                     'extensions'), platform = key)
-                for key, val in params.iteritems():
+                for key, val in params.items():
                     if isinstance(val, dict):
                         options_node = etree.SubElement(extension_node,
                                 '{%s}%s' %(NSMAP['lticm'], 'options'), name =
                                 key)
-                        for key, val in val.iteritems():
+                        for key, val in val.items():
                             property_node = etree.SubElement(options_node,
                                     '{%s}%s' %(NSMAP['lticm'], 'property'), 
                                     name = key)

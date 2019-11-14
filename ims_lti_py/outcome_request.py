@@ -3,8 +3,8 @@ from lxml import etree, objectify
 
 import oauth2
 
-from outcome_response import OutcomeResponse
-from utils import InvalidLTIConfigError, InvalidLTIRequestError
+from .outcome_response import OutcomeResponse
+from .utils import InvalidLTIConfigError, InvalidLTIRequestError
 
 REPLACE_REQUEST = 'replaceResult'
 DELETE_REQUEST = 'deleteResult'
@@ -38,7 +38,7 @@ class OutcomeRequest():
             setattr(self, accessor, None)
 
         # Store specified options in our accessors 
-        for (key, val) in opts.iteritems():
+        for (key, val) in opts.items():
             setattr(self, key, val)
 
     @staticmethod

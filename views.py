@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import unicode_literals
+
 
 from collections import defaultdict
 from functools import wraps
@@ -68,7 +68,7 @@ def check_valid_user(f):
                 'error.html',
                 message='Not allowed!'
             )
-        if 'course_id' not in kwargs.keys():
+        if 'course_id' not in list(kwargs.keys()):
             return render_template(
                 'error.html',
                 message='No course_id provided.'
@@ -192,7 +192,7 @@ def status():  # pragma: no cover
     ) == 0
 
     # Overall health check - if all checks are True
-    status['healthy'] = all(v is True for k, v in status['checks'].items())
+    status['healthy'] = all(v is True for k, v in list(status['checks'].items()))
 
     return Response(
         json.dumps(status),
@@ -205,7 +205,7 @@ def xml():
     """
     Returns the lti.xml file for the app.
     """
-    from urlparse import urlparse
+    from urllib.parse import urlparse
     domain = urlparse(request.url_root).netloc
 
     return Response(
@@ -671,7 +671,7 @@ def refresh_background(course_id):
                 error=False
             )
 
-            for percent, user_list in percent_user_map.iteritems():
+            for percent, user_list in percent_user_map.items():
                 extension_response = extend_quiz(
                     course_id,
                     quiz,
