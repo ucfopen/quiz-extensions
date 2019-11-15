@@ -23,17 +23,6 @@ json_headers = {
     'Content-type': 'application/json'
 }
 
-def error(exception=None):
-    return Response(
-        render_template(
-            'error.html',
-            message=exception.get(
-                'exception',
-                'Please contact your System Administrator.'
-            )
-        )
-    )
-
 
 def extend_quiz(course_id, quiz, percent, user_id_list):
     """

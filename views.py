@@ -35,6 +35,7 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = config.SQLALCHEMY_DATABASE_URI
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = config.SQLALCHEMY_TRACK_MODIFICATIONS
 app.secret_key = config.SECRET_KEY
+app.config.from_object('config')
 
 dictConfig(config.LOGGING_CONFIG)
 logger = logging.getLogger('app')
@@ -43,7 +44,16 @@ db.init_app(app)
 migrate = Migrate(app, db)
 
 
-
+def error(exception=None):
+    return Response(
+        render_template(
+            'error.html',
+            message=exception.get(
+                'exception',
+                'Please contact your System Administrator.'
+            )
+        )
+    )
 
 
 
