@@ -1,7 +1,4 @@
 # -*- coding: utf-8 -*-
-
-
-
 from collections import defaultdict
 from functools import wraps
 import logging
@@ -26,8 +23,9 @@ import config
 from models import db, Course, Extension, Quiz, User
 from utils import (
     extend_quiz, get_course, get_or_create, get_quizzes, get_user,
-    missing_quizzes, search_students, update_job
+    missing_quizzes, search_students, update_job, error
 )
+from pylti.flask import lti
 
 conn = redis.from_url(config.REDIS_URL)
 q = Queue('quizext', connection=conn)
@@ -44,76 +42,15 @@ logger = logging.getLogger('app')
 db.init_app(app)
 migrate = Migrate(app, db)
 
-oauth_creds = {config.LTI_KEY: config.LTI_SECRET}
-
-json_headers = {
-    'Authorization': 'Bearer ' + config.API_KEY,
-    'Content-type': 'application/json'
-}
 
 
-def check_valid_user(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        """
-        Decorator to check if the user is allowed access to the app.
 
-        If user is allowed, return the decorated function.
-        Otherwise, return an error page with corresponding message.
-        """
-        canvas_user_id = session.get('canvas_user_id')
-        lti_logged_in = session.get('lti_logged_in', False)
-        if not lti_logged_in or not canvas_user_id:
-            return render_template(
-                'error.html',
-                message='Not allowed!'
-            )
-        if 'course_id' not in list(kwargs.keys()):
-            return render_template(
-                'error.html',
-                message='No course_id provided.'
-            )
-        course_id = int(kwargs.get('course_id'))
-
-        if not session.get('is_admin', False):
-            enrollments_url = "{}courses/{}/enrollments".format(
-                config.API_URL,
-                course_id
-            )
-
-            payload = {
-                'user_id': canvas_user_id,
-                'type': [
-                    'TeacherEnrollment',
-                    'TaEnrollment',
-                    'DesignerEnrollment'
-                ]
-            }
-
-            user_enrollments_response = requests.get(
-                enrollments_url,
-                data=json.dumps(payload),
-                headers=json_headers
-            )
-            user_enrollments = user_enrollments_response.json()
-
-            if not user_enrollments or 'errors' in user_enrollments:
-                message = (
-                    'You are not enrolled in this course as a Teacher, '
-                    'TA, or Designer.'
-                )
-                return render_template(
-                    'error.html',
-                    message=message
-                )
-
-        return f(*args, **kwargs)
-    return decorated_function
 
 
 @app.context_processor
 def add_google_analytics_id():
     return dict(GOOGLE_ANALYTICS=config.GOOGLE_ANALYTICS)
+
 
 
 @app.route("/", methods=['POST', 'GET'])
@@ -219,8 +156,8 @@ def xml():
 
 
 @app.route("/quiz/<course_id>/", methods=['GET'])
-@check_valid_user
-def quiz(course_id=None):
+@lti(error=error, request='session', role='staff', app=app)
+def quiz(lti=lti, course_id=None):
     """
     Main landing page for the app.
 
@@ -257,8 +194,8 @@ def refresh(course_id=None):
 
 
 @app.route("/update/<course_id>/", methods=['POST'])
-@check_valid_user
-def update(course_id=None):
+@lti(error=error, request='session', role='staff', app=app)
+def update(lti=lti,course_id=None):
     """
     Creates a new `update_background` job.
 
@@ -733,8 +670,8 @@ def missing_quizzes_check(course_id):
 
 
 @app.route("/filter/<course_id>/", methods=['GET'])
-@check_valid_user
-def filter(course_id=None):
+@lti(error=error, request='sessions', role='staff', app=app)
+def filter(lti=lti,course_id=None):
     """
     Display a filtered and paginated list of students in the course.
 
@@ -769,7 +706,8 @@ def filter(course_id=None):
 
 
 @app.route('/launch', methods=['POST'])
-def lti_tool():  # pragma: no cover
+@lti(error=error, request='initial', role='staff', app=app)
+def lti_tool(lti=lti):  # pragma: no cover
     """
     Bootstrapper for lti.
     """
@@ -796,41 +734,9 @@ def lti_tool():  # pragma: no cover
         )
 
     session["is_admin"] = "Administrator" in roles
-
-    key = request.form.get('oauth_consumer_key')
-    if key:
-        secret = oauth_creds.get(key)
-        if secret:
-            tool_provider = ToolProvider(key, secret, request.form)
-        else:
-            tool_provider = ToolProvider(None, None, request.form)
-            tool_provider.lti_msg = 'Your consumer didn\'t use a recognized key'
-            tool_provider.lti_errorlog = 'You did it wrong!'
-            return render_template(
-                'error.html',
-                message='Consumer key wasn\'t recognized',
-                params=request.form
-            )
-    else:
-        return render_template('error.html', message='No consumer key')
-    if not tool_provider.is_valid_request(request):
-        return render_template(
-            'error.html',
-            message='The OAuth signature was invalid',
-            params=request.form
-        )
-
-    if time() - int(tool_provider.oauth_timestamp) > 60 * 60:
-        return render_template('error.html', message='Your request is too old.')
-
-    # This does truly check anything, it's just here to remind you  that real
-    # tools should be checking the OAuth nonce
-    if was_nonce_used_in_last_x_minutes(tool_provider.oauth_nonce, 60):
-        return render_template('error.html', message='Why are you reusing the nonce?')
-
+    
     session['canvas_user_id'] = canvas_user_id
     session['lti_logged_in'] = True
-    session['launch_params'] = tool_provider.to_params()
 
     return redirect(url_for('quiz', course_id=course_id))
 
