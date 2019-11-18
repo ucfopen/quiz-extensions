@@ -11,7 +11,6 @@ from flask import (
     Flask, render_template, session, request, redirect, url_for, Response,
 )
 from flask_migrate import Migrate
-from ims_lti_py import ToolProvider
 import requests
 import redis
 from redis.exceptions import ConnectionError
@@ -23,7 +22,7 @@ import config
 from models import db, Course, Extension, Quiz, User
 from utils import (
     extend_quiz, get_course, get_or_create, get_quizzes, get_user,
-    missing_quizzes, search_students, update_job, error
+    missing_quizzes, search_students, update_job
 )
 from pylti.flask import lti
 
