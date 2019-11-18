@@ -121,7 +121,7 @@ def status():  # pragma: no cover
     # Check redis
     try:
         response = conn.echo('test')
-        status['checks']['redis'] = response == 'test'
+        status['checks']['redis'] = response == b'test'
     except ConnectionError:
         logger.exception('Redis connection failed.')
 
@@ -680,7 +680,7 @@ def missing_quizzes_check(course_id):
 
 
 @app.route("/filter/<course_id>/", methods=['GET'])
-@lti(error=error, request='sessions', role='staff', app=app)
+@lti(error=error, request='session', role='staff', app=app)
 def filter(lti=lti,course_id=None):
     """
     Display a filtered and paginated list of students in the course.
