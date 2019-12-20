@@ -198,7 +198,7 @@ def status():  # pragma: no cover
     ) == 0
 
     # Overall health check - if all checks are True
-    status['healthy'] = all(v is True for k, v in list(status['checks'].items()))
+    status['healthy'] = all(v is True for k, v in status['checks'].items())
 
     return Response(
         json.dumps(status),
