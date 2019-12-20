@@ -16,9 +16,6 @@ MAX_PER_PAGE = 100
 # (e.g. 'Ro0ibrkb4Z4bZmz1f5g1+/16K19GH/pa')
 SECRET_KEY = ''
 
-LTI_KEY = ''  # Consumer Key
-LTI_SECRET = ''  # Shared Secret
-
 LTI_TOOL_ID = ''  # A unique ID for the tool
 
 # URI for database. (e.g. 'mysql://root:root@localhost/quiz_extensions')
@@ -65,8 +62,6 @@ LOGGING_CONFIG = {
 
 TESTING_API_URL = ''  # Used only to run tests
 
-
-TESTING_API_URL = ''  # Used only to run tests
 
 CONSUMER_KEY = os.environ.get("CONSUMER_KEY", "CHANGEME")
 SHARED_SECRET = os.environ.get("SHARED_SECRET", "CHANGEME")

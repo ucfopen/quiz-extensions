@@ -5,7 +5,6 @@ import logging
 from logging.config import dictConfig
 import json
 from subprocess import call
-from time import time
 
 from flask import (
     Flask, render_template, session, request, redirect, url_for, Response,
@@ -42,6 +41,69 @@ logger = logging.getLogger('app')
 db.init_app(app)
 migrate = Migrate(app, db)
 
+json_headers = {
+    'Authorization': 'Bearer ' + config.API_KEY,
+    'Content-type': 'application/json'
+}
+
+
+def check_valid_user(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        """
+        Decorator to check if the user is allowed access to the app.
+        If user is allowed, return the decorated function.
+        Otherwise, return an error page with corresponding message.
+        """
+        canvas_user_id = session.get('canvas_user_id')
+        lti_logged_in = session.get('lti_logged_in', False)
+        if not lti_logged_in or not canvas_user_id:
+            return render_template(
+                'error.html',
+                message='Not allowed!'
+            )
+        if 'course_id' not in kwargs.keys():
+            return render_template(
+                'error.html',
+                message='No course_id provided.'
+            )
+        course_id = int(kwargs.get('course_id'))
+
+        if not session.get('is_admin', False):
+            enrollments_url = "{}courses/{}/enrollments".format(
+                config.API_URL,
+                course_id
+            )
+
+            payload = {
+                'user_id': canvas_user_id,
+                'type': [
+                    'TeacherEnrollment',
+                    'TaEnrollment',
+                    'DesignerEnrollment'
+                ]
+            }
+
+            user_enrollments_response = requests.get(
+                enrollments_url,
+                data=json.dumps(payload),
+                headers=json_headers
+            )
+            user_enrollments = user_enrollments_response.json()
+
+            if not user_enrollments or 'errors' in user_enrollments:
+                message = (
+                    'You are not enrolled in this course as a Teacher, '
+                    'TA, or Designer.'
+                )
+                return render_template(
+                    'error.html',
+                    message=message
+                )
+
+        return f(*args, **kwargs)
+    return decorated_function
+
 
 def error(exception=None):
     return Response(
@@ -55,11 +117,9 @@ def error(exception=None):
     )
 
 
-
 @app.context_processor
 def add_google_analytics_id():
     return dict(GOOGLE_ANALYTICS=config.GOOGLE_ANALYTICS)
-
 
 
 @app.route("/", methods=['POST', 'GET'])
@@ -165,6 +225,7 @@ def xml():
 
 
 @app.route("/quiz/<course_id>/", methods=['GET'])
+@check_valid_user
 @lti(error=error, request='session', role='staff', app=app)
 def quiz(lti=lti, course_id=None):
     """
@@ -203,8 +264,9 @@ def refresh(course_id=None):
 
 
 @app.route("/update/<course_id>/", methods=['POST'])
+@check_valid_user
 @lti(error=error, request='session', role='staff', app=app)
-def update(lti=lti,course_id=None):
+def update(lti=lti, course_id=None):
     """
     Creates a new `update_background` job.
 
@@ -679,8 +741,9 @@ def missing_quizzes_check(course_id):
 
 
 @app.route("/filter/<course_id>/", methods=['GET'])
+@check_valid_user
 @lti(error=error, request='session', role='staff', app=app)
-def filter(lti=lti,course_id=None):
+def filter(lti=lti, course_id=None):
     """
     Display a filtered and paginated list of students in the course.
 
@@ -734,7 +797,8 @@ def lti_tool(lti=lti):  # pragma: no cover
             message=msg.format(', '.join(config.ALLOWED_CANVAS_DOMAINS), canvas_domain),
         )
 
-    roles = request.form.get('ext_roles', [])
+    roles = request.values.get('roles', [])
+    # Probably don't need this anymore.  PyLTI should take care of this.
     if "Administrator" not in roles and "Instructor" not in roles:
         return render_template(
             'error.html',
@@ -743,7 +807,6 @@ def lti_tool(lti=lti):  # pragma: no cover
         )
 
     session["is_admin"] = "Administrator" in roles
-    
     session['canvas_user_id'] = canvas_user_id
     session['lti_logged_in'] = True
 
