@@ -1,20 +1,15 @@
 # -*- coding: utf-8 -*-
-
-from __future__ import unicode_literals
-
 from collections import defaultdict
 from functools import wraps
 import logging
 from logging.config import dictConfig
 import json
 from subprocess import call
-from time import time
 
 from flask import (
     Flask, render_template, session, request, redirect, url_for, Response,
 )
 from flask_migrate import Migrate
-from ims_lti_py import ToolProvider
 import requests
 import redis
 from redis.exceptions import ConnectionError
@@ -28,23 +23,20 @@ from utils import (
     extend_quiz, get_course, get_or_create, get_quizzes, get_user,
     missing_quizzes, search_students, update_job
 )
+from pylti.flask import lti
 
 conn = redis.from_url(config.REDIS_URL)
 q = Queue('quizext', connection=conn)
 
 app = Flask(__name__)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = config.SQLALCHEMY_DATABASE_URI
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = config.SQLALCHEMY_TRACK_MODIFICATIONS
-app.secret_key = config.SECRET_KEY
+app.config.from_object('config')
 
 dictConfig(config.LOGGING_CONFIG)
 logger = logging.getLogger('app')
 
 db.init_app(app)
 migrate = Migrate(app, db)
-
-oauth_creds = {config.LTI_KEY: config.LTI_SECRET}
 
 json_headers = {
     'Authorization': 'Bearer ' + config.API_KEY,
@@ -57,7 +49,6 @@ def check_valid_user(f):
     def decorated_function(*args, **kwargs):
         """
         Decorator to check if the user is allowed access to the app.
-
         If user is allowed, return the decorated function.
         Otherwise, return an error page with corresponding message.
         """
@@ -109,6 +100,18 @@ def check_valid_user(f):
 
         return f(*args, **kwargs)
     return decorated_function
+
+
+def error(exception=None):
+    return Response(
+        render_template(
+            'error.html',
+            message=exception.get(
+                'exception',
+                'Please contact your System Administrator.'
+            )
+        )
+    )
 
 
 @app.context_processor
@@ -174,7 +177,7 @@ def status():  # pragma: no cover
     # Check redis
     try:
         response = conn.echo('test')
-        status['checks']['redis'] = response == 'test'
+        status['checks']['redis'] = response == b'test'
     except ConnectionError:
         logger.exception('Redis connection failed.')
 
@@ -205,7 +208,7 @@ def xml():
     """
     Returns the lti.xml file for the app.
     """
-    from urlparse import urlparse
+    from urllib.parse import urlparse
     domain = urlparse(request.url_root).netloc
 
     return Response(
@@ -220,7 +223,8 @@ def xml():
 
 @app.route("/quiz/<course_id>/", methods=['GET'])
 @check_valid_user
-def quiz(course_id=None):
+@lti(error=error, request='session', role='staff', app=app)
+def quiz(lti=lti, course_id=None):
     """
     Main landing page for the app.
 
@@ -258,7 +262,8 @@ def refresh(course_id=None):
 
 @app.route("/update/<course_id>/", methods=['POST'])
 @check_valid_user
-def update(course_id=None):
+@lti(error=error, request='session', role='staff', app=app)
+def update(lti=lti, course_id=None):
     """
     Creates a new `update_background` job.
 
@@ -671,7 +676,7 @@ def refresh_background(course_id):
                 error=False
             )
 
-            for percent, user_list in percent_user_map.iteritems():
+            for percent, user_list in percent_user_map.items():
                 extension_response = extend_quiz(
                     course_id,
                     quiz,
@@ -734,7 +739,8 @@ def missing_quizzes_check(course_id):
 
 @app.route("/filter/<course_id>/", methods=['GET'])
 @check_valid_user
-def filter(course_id=None):
+@lti(error=error, request='session', role='staff', app=app)
+def filter(lti=lti, course_id=None):
     """
     Display a filtered and paginated list of students in the course.
 
@@ -769,7 +775,8 @@ def filter(course_id=None):
 
 
 @app.route('/launch', methods=['POST'])
-def lti_tool():  # pragma: no cover
+@lti(error=error, request='initial', role='staff', app=app)
+def lti_tool(lti=lti):  # pragma: no cover
     """
     Bootstrapper for lti.
     """
@@ -787,7 +794,8 @@ def lti_tool():  # pragma: no cover
             message=msg.format(', '.join(config.ALLOWED_CANVAS_DOMAINS), canvas_domain),
         )
 
-    roles = request.form.get('ext_roles', [])
+    roles = request.values.get('roles', [])
+    # Probably don't need this anymore.  PyLTI should take care of this.
     if "Administrator" not in roles and "Instructor" not in roles:
         return render_template(
             'error.html',
@@ -796,41 +804,8 @@ def lti_tool():  # pragma: no cover
         )
 
     session["is_admin"] = "Administrator" in roles
-
-    key = request.form.get('oauth_consumer_key')
-    if key:
-        secret = oauth_creds.get(key)
-        if secret:
-            tool_provider = ToolProvider(key, secret, request.form)
-        else:
-            tool_provider = ToolProvider(None, None, request.form)
-            tool_provider.lti_msg = 'Your consumer didn\'t use a recognized key'
-            tool_provider.lti_errorlog = 'You did it wrong!'
-            return render_template(
-                'error.html',
-                message='Consumer key wasn\'t recognized',
-                params=request.form
-            )
-    else:
-        return render_template('error.html', message='No consumer key')
-    if not tool_provider.is_valid_request(request):
-        return render_template(
-            'error.html',
-            message='The OAuth signature was invalid',
-            params=request.form
-        )
-
-    if time() - int(tool_provider.oauth_timestamp) > 60 * 60:
-        return render_template('error.html', message='Your request is too old.')
-
-    # This does truly check anything, it's just here to remind you  that real
-    # tools should be checking the OAuth nonce
-    if was_nonce_used_in_last_x_minutes(tool_provider.oauth_nonce, 60):
-        return render_template('error.html', message='Why are you reusing the nonce?')
-
     session['canvas_user_id'] = canvas_user_id
     session['lti_logged_in'] = True
-    session['launch_params'] = tool_provider.to_params()
 
     return redirect(url_for('quiz', course_id=course_id))
 

@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import unicode_literals
-
 from collections import defaultdict
 import json
 import math
 import requests
-from urlparse import parse_qs, urlsplit
+from urllib.parse import parse_qs, urlsplit
 
 import config
 from models import Quiz

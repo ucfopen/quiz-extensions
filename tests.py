@@ -1,7 +1,4 @@
 # -*- coding: utf-8 -*-
-
-from __future__ import unicode_literals
-
 import logging
 
 from flask import url_for, session
@@ -10,7 +7,9 @@ import requests
 import requests_mock
 import fakeredis
 from rq import Queue, SimpleWorker
-
+from pylti.common import LTI_SESSION_KEY
+from urllib.parse import urlencode
+import oauthlib.oauth1
 import config
 from models import Course, Extension, Quiz, User
 import views
@@ -32,7 +31,7 @@ class ViewTests(flask_testing.TestCase):
         with self.app.test_request_context():
             views.db.create_all()
 
-        self.queue = Queue(async=False, connection=fakeredis.FakeStrictRedis())
+        self.queue = Queue(is_async=False, connection=fakeredis.FakeStrictRedis())
         self.worker = SimpleWorker([self.queue], connection=self.queue.connection)
 
     def tearDown(self):
@@ -143,7 +142,7 @@ class ViewTests(flask_testing.TestCase):
         response = self.client.get('/')
         self.assertEqual(
             response.data,
-            "Please contact your System Administrator."
+            b"Please contact your System Administrator."
         )
 
     def test_xml(self, m):
@@ -154,13 +153,15 @@ class ViewTests(flask_testing.TestCase):
         self.assertIn('application/xml', response.content_type)
 
         self.assert_context('tool_id', config.LTI_TOOL_ID)
-        self.assertIn(url_for('lti_tool'), response.data)
+        self.assertIn(url_for('lti_tool').encode('utf-8'), response.data)
 
     def test_quiz(self, m):
         with self.client.session_transaction() as sess:
             sess['canvas_user_id'] = 1234
             sess['lti_logged_in'] = True
             sess['is_admin'] = True
+            sess[LTI_SESSION_KEY] = True
+            sess['roles'] = 'Administrator'
 
         course_id = 1
 
@@ -953,7 +954,7 @@ class ViewTests(flask_testing.TestCase):
         response = self.client.get('/missing_quizzes/{}/'.format(course_id))
 
         self.assert_200(response)
-        self.assertEqual(response.data, 'false')
+        self.assertEqual(response.data, b'false')
 
     def test_missing_quizzes_check_no_extensions(self, m):
         course_id = 1
@@ -968,7 +969,7 @@ class ViewTests(flask_testing.TestCase):
         response = self.client.get('/missing_quizzes/{}/'.format(course_id))
 
         self.assert_200(response)
-        self.assertEqual(response.data, 'false')
+        self.assertEqual(response.data, b'false')
 
     def test_missing_quizzes_check_true(self, m):
         m.register_uri(
@@ -997,7 +998,7 @@ class ViewTests(flask_testing.TestCase):
         response = self.client.get('/missing_quizzes/{}/'.format(course_id))
 
         self.assert_200(response)
-        self.assertEqual(response.data, 'true')
+        self.assertEqual(response.data, b'true')
 
     def test_missing_quizzes_check_false(self, m):
         m.register_uri(
@@ -1033,13 +1034,15 @@ class ViewTests(flask_testing.TestCase):
         response = self.client.get('/missing_quizzes/{}/'.format(course_id))
 
         self.assert_200(response)
-        self.assertEqual(response.data, 'false')
+        self.assertEqual(response.data, b'false')
 
     def test_filter_no_students_found(self, m):
         with self.client.session_transaction() as sess:
             sess['canvas_user_id'] = 1234
             sess['lti_logged_in'] = True
             sess['is_admin'] = True
+            sess['roles'] = 'Instructor'
+            sess[LTI_SESSION_KEY] = True
 
         m.register_uri(
             'GET',
@@ -1056,8 +1059,10 @@ class ViewTests(flask_testing.TestCase):
 
     def test_filter(self, m):
         with self.client.session_transaction() as sess:
+            sess[LTI_SESSION_KEY] = True
             sess['canvas_user_id'] = 1234
             sess['lti_logged_in'] = True
+            sess['roles'] = 'Administrator'
             sess['is_admin'] = True
 
         m.register_uri(
@@ -1080,39 +1085,91 @@ class ViewTests(flask_testing.TestCase):
         self.assertEqual(self.get_context_variable('max_pages'), 99)
 
     def test_lti_tool_not_admin_or_instructor(self, m):
-        user_id = 42
+        with self.client.session_transaction() as sess:
+            sess[LTI_SESSION_KEY] = True
+            sess['oauth_consumer_key'] = 'key'
+            sess['roles'] = 'User'
+            sess['canvas_user_id'] = 1
+
+        payload = {
+            'launch_presentation_return_url': 'http://localhost/',
+            'custom_canvas_user_id': '1',
+            'custom_canvas_course_id': '1',
+            'custom_canvas_api_domain': config.TESTING_API_URL,
+            }
+
+        signed_url = self.generate_launch_request(
+            '/launch',
+            http_method="POST",
+            roles='User',
+            body=payload,
+            headers={'Content-Type': 'application/x-www-form-urlencoded'}
+        )
 
         response = self.client.post(
-            '/launch',
-            data={
-                'custom_canvas_course_id': 'test',
-                'custom_canvas_user_id': user_id,
-                'custom_canvas_api_domain': config.TESTING_API_URL,
-                'ext_roles': []
-            }
+            signed_url,
+            data=payload,
         )
+
         self.assert_200(response)
         self.assert_template_used('error.html')
-        self.assertEqual(
-            self.get_context_variable('message'),
-            'Must be an Administrator or Instructor'
+        self.assertIn(
+            b'Not authorized',
+            response.data,
         )
 
     def test_lti_tool(self, m):
-        user_id = 42
+        payload = {
+            'launch_presentation_return_url': 'http://localhost/',
+            'custom_canvas_api_domain': config.TESTING_API_URL,
+            'custom_canvas_user_id': '1',
+            'custom_canvas_course_id': '1',
+            }
 
-        with self.client as c:
-            response = c.post(
-                '/launch',
-                data={
-                    'custom_canvas_course_id': 'test',
-                    'custom_canvas_user_id': user_id,
-                    'custom_canvas_api_domain': config.TESTING_API_URL,
-                    'ext_roles': 'Administrator'
-                }
-            )
-            self.assert200(response)
-            self.assertTrue(session.get('is_admin', False))
+        signed_url = self.generate_launch_request(
+            '/launch',
+            http_method="POST",
+            body=payload,
+            roles='Administrator',
+            headers={'Content-Type': 'application/x-www-form-urlencoded'}
+        )
+
+        response = self.client.post(
+            signed_url,
+            data=payload,
+        )
+
+        with self.client.session_transaction() as session:
+            self.assertRedirects(response, '/quiz/1/')
+            self.assertTrue(session.get('is_admin'))
+
+    @staticmethod
+    def generate_launch_request(
+                url, body=None, http_method="GET", base_url='http://localhost',
+                roles='Instructor', headers=None
+            ):
+        params = {}
+
+        if roles is not None:
+            params['roles'] = roles
+
+        urlparams = urlencode(params)
+
+        client = oauthlib.oauth1.Client(
+            'key',
+            client_secret='secret',
+            signature_method=oauthlib.oauth1.SIGNATURE_HMAC,
+            signature_type=oauthlib.oauth1.SIGNATURE_TYPE_QUERY
+        )
+        signature = client.sign(
+            "{}{}?{}".format(base_url, url, urlparams),
+            body=body,
+            http_method=http_method,
+            headers=headers
+        )
+        signed_url = signature[0]
+        new_url = signed_url[len(base_url):]
+        return new_url
 
 
 @requests_mock.Mocker()
