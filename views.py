@@ -129,6 +129,10 @@ def status():  # pragma: no cover
     """
     Runs smoke tests and reports status
     """
+    try:
+        job_queue_length = len(q.jobs)
+    except ConnectionError:
+        job_queue_length = -1
 
     status = {
         'tool': 'Quiz Extensions',
@@ -144,7 +148,7 @@ def status():  # pragma: no cover
         'api_url': config.API_URL,
         'debug': app.debug,
         'xml_url': url_for('xml', _external=True),
-        'job_queue': len(q.jobs)
+        'job_queue': job_queue_length
     }
 
     # Check index
