@@ -132,6 +132,10 @@ def status():  # pragma: no cover
     """
     Runs smoke tests and reports status
     """
+    try:
+        job_queue_length = len(q.jobs)
+    except ConnectionError:
+        job_queue_length = -1
 
     status = {
         'tool': 'Quiz Extensions',
@@ -147,7 +151,7 @@ def status():  # pragma: no cover
         'api_url': config.API_URL,
         'debug': app.debug,
         'xml_url': url_for('xml', _external=True),
-        'job_queue': len(q.jobs)
+        'job_queue': job_queue_length
     }
 
     # Check index
@@ -795,13 +799,7 @@ def lti_tool(lti=lti):  # pragma: no cover
         )
 
     roles = request.values.get('roles', [])
-    # Probably don't need this anymore.  PyLTI should take care of this.
-    if "Administrator" not in roles and "Instructor" not in roles:
-        return render_template(
-            'error.html',
-            message='Must be an Administrator or Instructor',
-            params=request.form
-        )
+
 
     session["is_admin"] = "Administrator" in roles
     session['canvas_user_id'] = canvas_user_id
