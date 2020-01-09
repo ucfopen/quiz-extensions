@@ -1,9 +1,10 @@
 -r requirements.txt
 
+black
 blinker==1.4
 coverage==4.5.1
 fakeredis==0.14.0
+flake8
 Flask-Testing==0.7.1
 requests-mock==1.5.2
 oauthlib
-flake8

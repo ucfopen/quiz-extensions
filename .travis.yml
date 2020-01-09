@@ -1,0 +1,19 @@
+language: python
+matrix:
+  include:
+  - python: 3.7
+  - python: 3.8
+install:
+- pip install -r test_requirements.txt
+- pip install coveralls
+- gem install mdl
+before_script:
+- cp config.py.template config.py
+- mkdir logs; touch logs/quiz_ext.log
+script:
+- flake8
+- black --check .
+- mdl .
+- coverage run -m unittest discover
+after_success:
+- coveralls

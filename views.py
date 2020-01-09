@@ -7,7 +7,13 @@ import json
 from subprocess import call
 
 from flask import (
-    Flask, render_template, session, request, redirect, url_for, Response,
+    Flask,
+    render_template,
+    session,
+    request,
+    redirect,
+    url_for,
+    Response,
 )
 from flask_migrate import Migrate
 import requests
@@ -20,27 +26,33 @@ from rq.exceptions import NoSuchJobError
 import config
 from models import db, Course, Extension, Quiz, User
 from utils import (
-    extend_quiz, get_course, get_or_create, get_quizzes, get_user,
-    missing_quizzes, search_students, update_job
+    extend_quiz,
+    get_course,
+    get_or_create,
+    get_quizzes,
+    get_user,
+    missing_quizzes,
+    search_students,
+    update_job,
 )
 from pylti.flask import lti
 
 conn = redis.from_url(config.REDIS_URL)
-q = Queue('quizext', connection=conn)
+q = Queue("quizext", connection=conn)
 
 app = Flask(__name__)
 
-app.config.from_object('config')
+app.config.from_object("config")
 
 dictConfig(config.LOGGING_CONFIG)
-logger = logging.getLogger('app')
+logger = logging.getLogger("app")
 
 db.init_app(app)
 migrate = Migrate(app, db)
 
 json_headers = {
-    'Authorization': 'Bearer ' + config.API_KEY,
-    'Content-type': 'application/json'
+    "Authorization": "Bearer " + config.API_KEY,
+    "Content-type": "application/json",
 }
 
 
@@ -52,64 +64,48 @@ def check_valid_user(f):
         If user is allowed, return the decorated function.
         Otherwise, return an error page with corresponding message.
         """
-        canvas_user_id = session.get('canvas_user_id')
-        lti_logged_in = session.get('lti_logged_in', False)
+        canvas_user_id = session.get("canvas_user_id")
+        lti_logged_in = session.get("lti_logged_in", False)
         if not lti_logged_in or not canvas_user_id:
-            return render_template(
-                'error.html',
-                message='Not allowed!'
-            )
-        if 'course_id' not in kwargs.keys():
-            return render_template(
-                'error.html',
-                message='No course_id provided.'
-            )
-        course_id = int(kwargs.get('course_id'))
+            return render_template("error.html", message="Not allowed!")
+        if "course_id" not in kwargs.keys():
+            return render_template("error.html", message="No course_id provided.")
+        course_id = int(kwargs.get("course_id"))
 
-        if not session.get('is_admin', False):
+        if not session.get("is_admin", False):
             enrollments_url = "{}courses/{}/enrollments".format(
-                config.API_URL,
-                course_id
+                config.API_URL, course_id
             )
 
             payload = {
-                'user_id': canvas_user_id,
-                'type': [
-                    'TeacherEnrollment',
-                    'TaEnrollment',
-                    'DesignerEnrollment'
-                ]
+                "user_id": canvas_user_id,
+                "type": ["TeacherEnrollment", "TaEnrollment", "DesignerEnrollment"],
             }
 
             user_enrollments_response = requests.get(
-                enrollments_url,
-                data=json.dumps(payload),
-                headers=json_headers
+                enrollments_url, data=json.dumps(payload), headers=json_headers
             )
             user_enrollments = user_enrollments_response.json()
 
-            if not user_enrollments or 'errors' in user_enrollments:
+            if not user_enrollments or "errors" in user_enrollments:
                 message = (
-                    'You are not enrolled in this course as a Teacher, '
-                    'TA, or Designer.'
+                    "You are not enrolled in this course as a Teacher, "
+                    "TA, or Designer."
                 )
-                return render_template(
-                    'error.html',
-                    message=message
-                )
+                return render_template("error.html", message=message)
 
         return f(*args, **kwargs)
+
     return decorated_function
 
 
 def error(exception=None):
     return Response(
         render_template(
-            'error.html',
+            "error.html",
             message=exception.get(
-                'exception',
-                'Please contact your System Administrator.'
-            )
+                "exception", "Please contact your System Administrator."
+            ),
         )
     )
 
@@ -119,7 +115,7 @@ def add_google_analytics_id():
     return dict(GOOGLE_ANALYTICS=config.GOOGLE_ANALYTICS)
 
 
-@app.route("/", methods=['POST', 'GET'])
+@app.route("/", methods=["POST", "GET"])
 def index():
     """
     Default app index.
@@ -127,7 +123,7 @@ def index():
     return "Please contact your System Administrator."
 
 
-@app.route("/status", methods=['GET'])
+@app.route("/status", methods=["GET"])
 def status():  # pragma: no cover
     """
     Runs smoke tests and reports status
@@ -138,96 +134,94 @@ def status():  # pragma: no cover
         job_queue_length = -1
 
     status = {
-        'tool': 'Quiz Extensions',
-        'checks': {
-            'index': False,
-            'xml': False,
-            'api_key': False,
-            'redis': False,
-            'db': False,
-            'worker': False,
+        "tool": "Quiz Extensions",
+        "checks": {
+            "index": False,
+            "xml": False,
+            "api_key": False,
+            "redis": False,
+            "db": False,
+            "worker": False,
         },
-        'url': url_for('index', _external=True),
-        'api_url': config.API_URL,
-        'debug': app.debug,
-        'xml_url': url_for('xml', _external=True),
-        'job_queue': job_queue_length
+        "url": url_for("index", _external=True),
+        "api_url": config.API_URL,
+        "debug": app.debug,
+        "xml_url": url_for("xml", _external=True),
+        "job_queue": job_queue_length,
     }
 
     # Check index
     try:
-        response = requests.get(url_for('index', _external=True), verify=False)
-        status['checks']['index'] = response.text == 'Please contact your System Administrator.'
-    except Exception as e:
-        logger.exception('Index check failed.')
+        response = requests.get(url_for("index", _external=True), verify=False)
+        status["checks"]["index"] = (
+            response.text == "Please contact your System Administrator."
+        )
+    except Exception:
+        logger.exception("Index check failed.")
 
     # Check xml
     try:
-        response = requests.get(url_for('xml', _external=True), verify=False)
-        status['checks']['xml'] = 'application/xml' in response.headers.get('Content-Type')
-    except Exception as e:
-        logger.exception('XML check failed.')
+        response = requests.get(url_for("xml", _external=True), verify=False)
+        status["checks"]["xml"] = "application/xml" in response.headers.get(
+            "Content-Type"
+        )
+    except Exception:
+        logger.exception("XML check failed.")
 
     # Check API Key
     try:
         response = requests.get(
-            '{}users/self'.format(config.API_URL),
-            headers={'Authorization': 'Bearer ' + config.API_KEY}
+            "{}users/self".format(config.API_URL),
+            headers={"Authorization": "Bearer " + config.API_KEY},
         )
-        status['checks']['api_key'] = response.status_code == 200
-    except Exception as e:
-        logger.exception('API Key check failed.')
+        status["checks"]["api_key"] = response.status_code == 200
+    except Exception:
+        logger.exception("API Key check failed.")
 
     # Check redis
     try:
-        response = conn.echo('test')
-        status['checks']['redis'] = response == b'test'
+        response = conn.echo("test")
+        status["checks"]["redis"] = response == b"test"
     except ConnectionError:
-        logger.exception('Redis connection failed.')
+        logger.exception("Redis connection failed.")
 
     # Check DB connection
     try:
         db.session.query("1").all()
-        status['checks']['db'] = True
-    except Exception as e:
-        logger.exception('DB connection failed.')
+        status["checks"]["db"] = True
+    except Exception:
+        logger.exception("DB connection failed.")
 
     # Check RQ Worker
-    status['checks']['worker'] = call(
-        'ps aux | grep "rq worker" | grep "quizext" | grep -v grep',
-        shell=True
-    ) == 0
-
-    # Overall health check - if all checks are True
-    status['healthy'] = all(v is True for k, v in status['checks'].items())
-
-    return Response(
-        json.dumps(status),
-        mimetype='application/json'
+    status["checks"]["worker"] = (
+        call('ps aux | grep "rq worker" | grep "quizext" | grep -v grep', shell=True)
+        == 0
     )
 
+    # Overall health check - if all checks are True
+    status["healthy"] = all(v is True for k, v in status["checks"].items())
 
-@app.route("/lti.xml", methods=['GET'])
+    return Response(json.dumps(status), mimetype="application/json")
+
+
+@app.route("/lti.xml", methods=["GET"])
 def xml():
     """
     Returns the lti.xml file for the app.
     """
     from urllib.parse import urlparse
+
     domain = urlparse(request.url_root).netloc
 
     return Response(
-        render_template(
-            'lti.xml',
-            tool_id=config.LTI_TOOL_ID,
-            domain=domain,
-        ),
-        mimetype='application/xml'
+        render_template("lti.xml", tool_id=config.LTI_TOOL_ID, domain=domain,),
+        mimetype="application/xml",
     )
 
 
-@app.route("/quiz/<course_id>/", methods=['GET'])
+@app.route("/quiz/<course_id>/", methods=["GET"])
 @check_valid_user
-@lti(error=error, request='session', role='staff', app=app)
+@lti(error=error, request="session", role="staff", app=app)
 def quiz(lti=lti, course_id=None):
     """
     Main landing page for the app.
@@ -236,13 +230,11 @@ def quiz(lti=lti, course_id=None):
     to moderate quizzes for.
     """
     return render_template(
-        'userselect.html',
-        course_id=course_id,
-        current_page_number=1
+        "userselect.html", course_id=course_id, current_page_number=1
     )
 
 
-@app.route('/refresh/<course_id>/', methods=['POST'])
+@app.route("/refresh/<course_id>/", methods=["POST"])
 def refresh(course_id=None):
     """
     Creates a new `refresh_background` job.
@@ -252,21 +244,17 @@ def refresh(course_id=None):
     :rtype: flask.Response
     :returns: A JSON-formatted response containing a url for the started job.
     """
-    job = q.enqueue_call(
-        func=refresh_background, args=(course_id,)
-    )
+    job = q.enqueue_call(func=refresh_background, args=(course_id,))
     return Response(
-        json.dumps({
-            'refresh_job_url': url_for('job_status', job_key=job.get_id())
-        }),
-        mimetype='application/json',
-        status=202
+        json.dumps({"refresh_job_url": url_for("job_status", job_key=job.get_id())}),
+        mimetype="application/json",
+        status=202,
     )
 
 
-@app.route("/update/<course_id>/", methods=['POST'])
+@app.route("/update/<course_id>/", methods=["POST"])
 @check_valid_user
-@lti(error=error, request='session', role='staff', app=app)
+@lti(error=error, request="session", role="staff", app=app)
 def update(lti=lti, course_id=None):
     """
     Creates a new `update_background` job.
@@ -276,60 +264,56 @@ def update(lti=lti, course_id=None):
     :rtype: flask.Response
     :returns: A JSON-formatted response containing urls for the started jobs.
     """
-    refresh_job = q.enqueue_call(
-        func=refresh_background, args=(course_id,)
-    )
+    refresh_job = q.enqueue_call(func=refresh_background, args=(course_id,))
     update_job = q.enqueue_call(
         func=update_background,
         args=(course_id, request.get_json()),
-        depends_on=refresh_job
+        depends_on=refresh_job,
     )
     return Response(
-        json.dumps({
-            'refresh_job_url': url_for('job_status', job_key=refresh_job.get_id()),
-            'update_job_url': url_for('job_status', job_key=update_job.get_id())
-        }),
-        mimetype='application/json',
-        status=202
+        json.dumps(
+            {
+                "refresh_job_url": url_for("job_status", job_key=refresh_job.get_id()),
+                "update_job_url": url_for("job_status", job_key=update_job.get_id()),
+            }
+        ),
+        mimetype="application/json",
+        status=202,
     )
 
 
-@app.route('/jobs/<job_key>/', methods=['GET'])
+@app.route("/jobs/<job_key>/", methods=["GET"])
 def job_status(job_key):
     try:
         job = Job.fetch(job_key, connection=conn)
     except NoSuchJobError:
         return Response(
-            json.dumps({
-                'error': True,
-                'status_msg': '{} is not a valid job key.'.format(job_key)
-            }),
-            mimetype='application/json',
-            status=404
+            json.dumps(
+                {
+                    "error": True,
+                    "status_msg": "{} is not a valid job key.".format(job_key),
+                }
+            ),
+            mimetype="application/json",
+            status=404,
         )
 
     if job.is_finished:
-        return Response(
-            json.dumps(job.result),
-            mimetype='application/json',
-            status=200
-        )
+        return Response(json.dumps(job.result), mimetype="application/json", status=200)
     elif job.is_failed:
         logger.error("Job {} failed.\n{}".format(job_key, job.exc_info))
         return Response(
-            json.dumps({
-                'error': True,
-                'status_msg': 'Job {} failed to complete.'.format(job_key)
-            }),
-            mimetype='application/json',
-            status=500
+            json.dumps(
+                {
+                    "error": True,
+                    "status_msg": "Job {} failed to complete.".format(job_key),
+                }
+            ),
+            mimetype="application/json",
+            status=500,
         )
     else:
-        return Response(
-            json.dumps(job.meta),
-            mimetype='application/json',
-            status=202
-        )
+        return Response(json.dumps(job.meta), mimetype="application/json", status=202)
 
 
 def update_background(course_id, extension_dict):
@@ -355,49 +339,31 @@ def update_background(course_id, extension_dict):
     """
     job = get_current_job()
 
-    update_job(job, 0, 'Starting...', 'started')
+    update_job(job, 0, "Starting...", "started")
 
     with app.app_context():
         if not extension_dict:
-            update_job(
-                job,
-                0,
-                'Invalid Request',
-                'failed',
-                error=True
-            )
-            logger.warning('Invalid Request: {}'.format(extension_dict))
+            update_job(job, 0, "Invalid Request", "failed", error=True)
+            logger.warning("Invalid Request: {}".format(extension_dict))
             return job.meta
 
         try:
             course_json = get_course(course_id)
         except requests.exceptions.HTTPError:
-            update_job(
-                job,
-                0,
-                'Course not found.',
-                'failed',
-                error=True
-            )
-            logger.exception('Unable to find course #{}'.format(course_id))
+            update_job(job, 0, "Course not found.", "failed", error=True)
+            logger.exception("Unable to find course #{}".format(course_id))
             return job.meta
 
-        course_name = course_json.get('name', '<UNNAMED COURSE>')
+        course_name = course_json.get("name", "<UNNAMED COURSE>")
 
-        user_ids = extension_dict.get('user_ids', [])
-        percent = extension_dict.get('percent', None)
+        user_ids = extension_dict.get("user_ids", [])
+        percent = extension_dict.get("percent", None)
 
         if not percent:
-            update_job(
-                job,
-                0,
-                '`percent` field required.',
-                'failed',
-                error=True
+            update_job(job, 0, "`percent` field required.", "failed", error=True)
+            logger.warning(
+                "Percent field not provided. Request: {}".format(extension_dict)
             )
-            logger.warning('Percent field not provided. Request: {}'.format(
-                extension_dict
-            ))
             return job.meta
 
         course, created = get_or_create(db.session, Course, canvas_id=course_id)
@@ -408,16 +374,13 @@ def update_background(course_id, extension_dict):
             try:
                 canvas_user = get_user(course_id, user_id)
 
-                sortable_name = canvas_user.get('sortable_name', '<MISSING NAME>')
-                sis_id = canvas_user.get('sis_user_id')
+                sortable_name = canvas_user.get("sortable_name", "<MISSING NAME>")
+                sis_id = canvas_user.get("sis_user_id")
 
             except requests.exceptions.HTTPError:
                 # Unable to find user. Log and skip them.
                 logger.warning(
-                    "Unable to find user #{} in course #{}".format(
-                        user_id,
-                        course_id
-                    )
+                    "Unable to find user #{} in course #{}".format(user_id, course_id)
                 )
                 continue
 
@@ -430,10 +393,7 @@ def update_background(course_id, extension_dict):
 
             # create/update extension
             extension, created = get_or_create(
-                db.session,
-                Extension,
-                course_id=course.id,
-                user_id=user.id
+                db.session, Extension, course_id=course.id, user_id=user.id
             )
             extension.percent = percent
 
@@ -448,70 +408,61 @@ def update_background(course_id, extension_dict):
             update_job(
                 job,
                 0,
-                'Sorry, there are no quizzes for this course.',
-                'failed',
-                error=True
+                "Sorry, there are no quizzes for this course.",
+                "failed",
+                error=True,
             )
             logger.warning(
-                "No quizzes found for course {}. Unable to update.".format(
-                    course_id
-                )
+                "No quizzes found for course {}. Unable to update.".format(course_id)
             )
             return job.meta
 
         for index, quiz in enumerate(quizzes):
-            quiz_id = quiz.get('id', None)
-            quiz_title = quiz.get('title', "[UNTITLED QUIZ]")
+            quiz_id = quiz.get("id", None)
+            quiz_title = quiz.get("title", "[UNTITLED QUIZ]")
 
             comp_perc = int(((float(index)) / float(num_quizzes)) * 100)
-            updating_str = 'Updating quiz #{} - {} [{} of {}]'
+            updating_str = "Updating quiz #{} - {} [{} of {}]"
             update_job(
                 job,
                 comp_perc,
                 updating_str.format(quiz_id, quiz_title, index + 1, num_quizzes),
-                'processing',
-                error=False
+                "processing",
+                error=False,
             )
 
             extension_response = extend_quiz(course_id, quiz, percent, user_ids)
 
-            if extension_response.get('success', False) is True:
+            if extension_response.get("success", False) is True:
                 # add/update quiz
                 quiz_obj, created = get_or_create(
-                    db.session,
-                    Quiz,
-                    canvas_id=quiz_id,
-                    course_id=course.id
+                    db.session, Quiz, canvas_id=quiz_id, course_id=course.id
                 )
                 quiz_obj.title = quiz_title
 
                 db.session.commit()
 
-                added_time = extension_response.get('added_time', None)
+                added_time = extension_response.get("added_time", None)
                 if added_time is not None:
-                    quiz_time_list.append({
-                        "title": quiz_title,
-                        "added_time": added_time
-                    })
+                    quiz_time_list.append(
+                        {"title": quiz_title, "added_time": added_time}
+                    )
                 else:
                     unchanged_quiz_time_list.append({"title": quiz_title})
             else:
                 update_job(
                     job,
                     comp_perc,
-                    extension_response.get(
-                        'message',
-                        'An unknown error occured.'
-                    ),
-                    'failed',
-                    error=True
+                    extension_response.get("message", "An unknown error occured."),
+                    "failed",
+                    error=True,
                 )
                 logger.error("Extension failed: {}".format(extension_response))
                 return job.meta
 
         msg_str = (
-            'Success! {} {} been updated for {} student(s) to have {}% time. '
-            '{} {} no time limit and were left unchanged.'
+            "Success! {} {} been updated for {} student(s) to have {}% time. "
+            "{} {} no time limit and were left unchanged."
         )
 
         message = msg_str.format(
@@ -520,12 +471,12 @@ def update_background(course_id, extension_dict):
             len(user_ids),
             percent,
             len(unchanged_quiz_time_list),
-            "quizzes have" if len(unchanged_quiz_time_list) != 1 else "quiz has"
+            "quizzes have" if len(unchanged_quiz_time_list) != 1 else "quiz has",
         )
 
-        update_job(job, 100, message, 'complete', error=False)
-        job.meta['quiz_list'] = quiz_time_list
-        job.meta['unchanged_list'] = unchanged_quiz_time_list
+        update_job(job, 100, message, "complete", error=False)
+        job.meta["quiz_list"] = quiz_time_list
+        job.meta["unchanged_list"] = unchanged_quiz_time_list
         job.save()
 
         return job.meta
@@ -545,31 +496,18 @@ def refresh_background(course_id):
     """
     job = get_current_job()
 
-    update_job(job, 0, 'Starting...', 'started')
+    update_job(job, 0, "Starting...", "started")
 
     with app.app_context():
-        course, created = get_or_create(
-            db.session,
-            Course,
-            canvas_id=course_id
-        )
+        course, created = get_or_create(db.session, Course, canvas_id=course_id)
 
         try:
-            course_name = get_course(course_id).get(
-                'name',
-                '<UNNAMED COURSE>'
-            )
+            course_name = get_course(course_id).get("name", "<UNNAMED COURSE>")
             course.course_name = course_name
             db.session.commit()
         except requests.exceptions.HTTPError:
-            update_job(
-                job,
-                0,
-                'Course not found.',
-                'failed',
-                error=True
-            )
-            logger.exception('Unable to find course #{}'.format(course_id))
+            update_job(job, 0, "Course not found.", "failed", error=True)
+            logger.exception("Unable to find course #{}".format(course_id))
 
             return job.meta
 
@@ -582,9 +520,9 @@ def refresh_background(course_id):
             update_job(
                 job,
                 100,
-                'Complete. No quizzes required updates.',
-                'complete',
-                error=False
+                "Complete. No quizzes required updates.",
+                "complete",
+                error=False,
             )
 
             return job.meta
@@ -593,19 +531,17 @@ def refresh_background(course_id):
 
         inactive_list = []
 
-        update_job(job, 0, 'Getting past extensions.', 'processing', False)
+        update_job(job, 0, "Getting past extensions.", "processing", False)
         for extension in course.extensions:
             # If extension is inactive, ignore.
             if not extension.active:
                 inactive_list.append(extension.user.sortable_name)
-                logger.debug('Extension #{} is inactive.'.format(
-                    extension.id
-                ))
+                logger.debug("Extension #{} is inactive.".format(extension.id))
                 continue
 
-            user_canvas_id = User.query.filter_by(
-                id=extension.user_id
-            ).first().canvas_id
+            user_canvas_id = (
+                User.query.filter_by(id=extension.user_id).first().canvas_id
+            )
 
             # Check if user is in course. If not, deactivate extension.
             try:
@@ -613,31 +549,31 @@ def refresh_background(course_id):
 
                 # Skip user if not a student. Fixes an edge case where a
                 # student that previously recieved an extension changes roles.
-                enrolls = canvas_user.get('enrollments', [])
-                type_list = [e['type'] for e in enrolls if e['enrollment_state'] == 'active']
-                if not any(t == 'StudentEnrollment' for t in type_list):
-                    logger.info((
-                        "User #{} was found in course #{}, but is not an "
-                        "active student. Deactivating extension #{}. Roles "
-                        "found: {}"
-                    ).format(
-                        user_canvas_id,
-                        course_id,
-                        extension.id,
-                        ", ".join(type_list) if len(enrolls) > 0 else None
-                    ))
+                enrolls = canvas_user.get("enrollments", [])
+                type_list = [
+                    e["type"] for e in enrolls if e["enrollment_state"] == "active"
+                ]
+                if not any(t == "StudentEnrollment" for t in type_list):
+                    logger.info(
+                        (
+                            "User #{} was found in course #{}, but is not an "
+                            "active student. Deactivating extension #{}. Roles "
+                            "found: {}"
+                        ).format(
+                            user_canvas_id,
+                            course_id,
+                            extension.id,
+                            ", ".join(type_list) if len(enrolls) > 0 else None,
+                        )
+                    )
                     extension.active = False
                     db.session.commit()
                     inactive_list.append(extension.user.sortable_name)
                     continue
 
             except requests.exceptions.HTTPError:
-                log_str = (
-                    'User #{} not in course #{}. Deactivating extension #{}.'
-                )
-                logger.info(
-                    log_str.format(user_canvas_id, course_id, extension.id)
-                )
+                log_str = "User #{} not in course #{}. Deactivating extension #{}."
+                logger.info(log_str.format(user_canvas_id, course_id, extension.id))
                 extension.active = False
                 db.session.commit()
                 inactive_list.append(extension.user.sortable_name)
@@ -646,77 +582,54 @@ def refresh_background(course_id):
             percent_user_map[extension.percent].append(user_canvas_id)
 
         if len(percent_user_map) < 1:
-            msg_str = 'No active extensions were found.<br>'
+            msg_str = "No active extensions were found.<br>"
 
             if len(inactive_list) > 0:
-                msg_str += ' Extensions for the following students are inactive:<br>{}'
+                msg_str += " Extensions for the following students are inactive:<br>{}"
                 msg_str = msg_str.format("<br>".join(inactive_list))
 
-            update_job(
-                job,
-                100,
-                msg_str,
-                'complete',
-                error=False
-            )
+            update_job(job, 100, msg_str, "complete", error=False)
             return job.meta
 
         for index, quiz in enumerate(quizzes):
-            quiz_id = quiz.get('id', None)
-            quiz_title = quiz.get('title', '[UNTITLED QUIZ]')
+            quiz_id = quiz.get("id", None)
+            quiz_title = quiz.get("title", "[UNTITLED QUIZ]")
 
             comp_perc = int(((float(index)) / float(num_quizzes)) * 100)
-            refreshing_str = 'Refreshing quiz #{} - {} [{} of {}]'
+            refreshing_str = "Refreshing quiz #{} - {} [{} of {}]"
             update_job(
                 job,
                 comp_perc,
-                refreshing_str.format(
-                    quiz_id,
-                    quiz_title,
-                    index + 1,
-                    num_quizzes
-                ),
-                'processing',
-                error=False
+                refreshing_str.format(quiz_id, quiz_title, index + 1, num_quizzes),
+                "processing",
+                error=False,
             )
 
             for percent, user_list in percent_user_map.items():
-                extension_response = extend_quiz(
-                    course_id,
-                    quiz,
-                    percent,
-                    user_list
-                )
+                extension_response = extend_quiz(course_id, quiz, percent, user_list)
 
-                if extension_response.get('success', False) is True:
+                if extension_response.get("success", False) is True:
                     # add/update quiz
                     quiz_obj, created = get_or_create(
-                        db.session,
-                        Quiz,
-                        canvas_id=quiz_id,
-                        course_id=course.id
+                        db.session, Quiz, canvas_id=quiz_id, course_id=course.id
                     )
                     quiz_obj.title = quiz_title
 
                     db.session.commit()
                 else:
-                    error_message = 'Some quizzes couldn\'t be updated. '
-                    error_message += extension_response.get('message', '')
+                    error_message = "Some quizzes couldn't be updated. "
+                    error_message += extension_response.get("message", "")
                     update_job(
-                        job,
-                        comp_perc,
-                        error_message,
-                        'failed',
-                        error=True,
+                        job, comp_perc, error_message, "failed", error=True,
                     )
                     return job.meta
 
-        msg = '{} quizzes have been updated.'.format(len(quizzes))
-        update_job(job, 100, msg, 'complete', error=False)
+        msg = "{} quizzes have been updated.".format(len(quizzes))
+        update_job(job, 100, msg, "complete", error=False)
         return job.meta
 
 
-@app.route("/missing_quizzes/<course_id>/", methods=['GET'])
+@app.route("/missing_quizzes/<course_id>/", methods=["GET"])
 def missing_quizzes_check(course_id):
     """
     Check if there are missing quizzes.
@@ -730,20 +643,20 @@ def missing_quizzes_check(course_id):
     course = Course.query.filter_by(canvas_id=course_id).first()
     if course is None:
         # No record of this course. No need to update yet.
-        return 'false'
+        return "false"
 
     num_extensions = Extension.query.filter_by(course_id=course.id).count()
     if num_extensions == 0:
         # There are no extensions for this course yet. No need to update.
-        return 'false'
+        return "false"
 
     missing = len(missing_quizzes(course_id, True)) > 0
     return json.dumps(missing)
 
 
-@app.route("/filter/<course_id>/", methods=['GET'])
+@app.route("/filter/<course_id>/", methods=["GET"])
 @check_valid_user
-@lti(error=error, request='session', role='staff', app=app)
+@lti(error=error, request="session", role="staff", app=app)
 def filter(lti=lti, course_id=None):
     """
     Display a filtered and paginated list of students in the course.
@@ -755,15 +668,12 @@ def filter(lti=lti, course_id=None):
         user_list.html.
     """
 
-    query = request.args.get('query', '').lower()
-    page = int(request.args.get('page', 1))
-    per_page = int(request.args.get('per_page', config.DEFAULT_PER_PAGE))
+    query = request.args.get("query", "").lower()
+    page = int(request.args.get("page", 1))
+    per_page = int(request.args.get("per_page", config.DEFAULT_PER_PAGE))
 
     user_list, max_pages = search_students(
-        course_id,
-        per_page=per_page,
-        page=page,
-        search_term=query
+        course_id, per_page=per_page, page=page, search_term=query
     )
 
     if not user_list or max_pages < 1:
@@ -771,41 +681,37 @@ def filter(lti=lti, course_id=None):
         max_pages = 1
 
     return render_template(
-        'user_list.html',
-        users=user_list,
-        current_page_number=page,
-        max_pages=max_pages
+        "user_list.html", users=user_list, current_page_number=page, max_pages=max_pages
     )
 
 
-@app.route('/launch', methods=['POST'])
-@lti(error=error, request='initial', role='staff', app=app)
+@app.route("/launch", methods=["POST"])
+@lti(error=error, request="initial", role="staff", app=app)
 def lti_tool(lti=lti):  # pragma: no cover
     """
     Bootstrapper for lti.
     """
-    course_id = request.values.get('custom_canvas_course_id')
-    canvas_user_id = request.values.get('custom_canvas_user_id')
-    canvas_domain = request.values.get('custom_canvas_api_domain')
+    course_id = request.values.get("custom_canvas_course_id")
+    canvas_user_id = request.values.get("custom_canvas_user_id")
+    canvas_domain = request.values.get("custom_canvas_api_domain")
 
     if canvas_domain not in config.ALLOWED_CANVAS_DOMAINS:
         msg = (
-            '<p>This tool is only available from the following domain(s):<br/>{}</p>'
-            '<p>You attempted to access from this domain:<br/>{}</p>'
+            "<p>This tool is only available from the following domain(s):<br/>{}</p>"
+            "<p>You attempted to access from this domain:<br/>{}</p>"
         )
         return render_template(
-            'error.html',
-            message=msg.format(', '.join(config.ALLOWED_CANVAS_DOMAINS), canvas_domain),
+            "error.html",
+            message=msg.format(", ".join(config.ALLOWED_CANVAS_DOMAINS), canvas_domain),
         )
 
-    roles = request.values.get('roles', [])
-
+    roles = request.values.get("roles", [])
 
     session["is_admin"] = "Administrator" in roles
-    session['canvas_user_id'] = canvas_user_id
-    session['lti_logged_in'] = True
+    session["canvas_user_id"] = canvas_user_id
+    session["lti_logged_in"] = True
 
-    return redirect(url_for('quiz', course_id=course_id))
+    return redirect(url_for("quiz", course_id=course_id))
 
 
 def was_nonce_used_in_last_x_minutes(nonce, minutes):  # pragma: no cover
