@@ -1,11 +1,13 @@
 import os
 
-API_URL = ''  # Canvas API URL (e.g. 'http://example.com/api/v1/')
-API_KEY = ''  # Canvas API Key
+# Canvas API URL (e.g. 'http://example.com/api/v1/')
+API_URL = "http://example.com/api/v1/"
+# Canvas API Key
+API_KEY = "CHANGEME"
 
 # A list of domains that are allowed to use the tool.
 # (e.g. ['example.com', 'example.edu'])
-ALLOWED_CANVAS_DOMAINS = []
+ALLOWED_CANVAS_DOMAINS = ["example.edu"]
 
 # The default number of objects the Canvas API will return per page (usually 10)
 DEFAULT_PER_PAGE = 10
@@ -14,70 +16,64 @@ MAX_PER_PAGE = 100
 
 # A secret key used by Flask for signing. KEEP THIS SECRET!
 # (e.g. 'Ro0ibrkb4Z4bZmz1f5g1+/16K19GH/pa')
-SECRET_KEY = ''
+SECRET_KEY = "CHANGEME"
 
-LTI_TOOL_ID = ''  # A unique ID for the tool
+LTI_TOOL_ID = "CHANGEME"  # A unique ID for the tool
 
 # URI for database. (e.g. 'mysql://root:root@localhost/quiz_extensions')
-SQLALCHEMY_DATABASE_URI = ''
+SQLALCHEMY_DATABASE_URI = ""
+SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-GOOGLE_ANALYTICS = ''  # The Google Analytics ID to use.
+GOOGLE_ANALYTICS = ""  # The Google Analytics ID to use.
 
-REDIS_URL = ''  # URL for the redis server (e.g. 'redis://localhost:6379')
+# URL for the redis server (e.g. 'redis://localhost:6379')
+REDIS_URL = "redis://localhost:6379"
 
 LOGGING_CONFIG = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'standard': {
-            'format': '%(asctime)s [%(levelname)s] {%(filename)s:%(lineno)d} %(message)s'
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "standard": {
+            "format": "%(asctime)s [%(levelname)s] {%(filename)s:%(lineno)d} %(message)s"
         },
-        'bare': {
-            'format': '%(message)s'
-        }
+        "bare": {"format": "%(message)s"},
     },
-    'handlers': {
-        'console': {
-            'level': 'DEBUG',
-            'formatter': 'standard',
-            'class': 'logging.StreamHandler',
+    "handlers": {
+        "console": {
+            "level": "DEBUG",
+            "formatter": "standard",
+            "class": "logging.StreamHandler",
         },
-        'file': {
-            'level': 'INFO',
-            'formatter': 'standard',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': 'logs/quiz_ext.log',
-            'maxBytes': 1024 * 1024 * 5,  # 5 MB
-            'backupCount': 5,
-        }
+        "file": {
+            "level": "INFO",
+            "formatter": "standard",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": "logs/quiz_ext.log",
+            "maxBytes": 1024 * 1024 * 5,  # 5 MB
+            "backupCount": 5,
+        },
     },
-    'loggers': {
-        'app': {
-            'handlers': ['console', 'file'],
-            'level': 'DEBUG',
-            'propagate': True
-        }
-    }
+    "loggers": {
+        "app": {"handlers": ["console", "file"], "level": "DEBUG", "propagate": True}
+    },
 }
 
-TESTING_API_URL = ''  # Used only to run tests
+TESTING_API_URL = "example.edu"  # Used only to run tests
 
 
-CONSUMER_KEY = os.environ.get("CONSUMER_KEY", "CHANGEME")
-SHARED_SECRET = os.environ.get("SHARED_SECRET", "CHANGEME")
+CONSUMER_KEY = os.environ.get("CONSUMER_KEY", "key")
+SHARED_SECRET = os.environ.get("SHARED_SECRET", "secret")
 
 # Configuration for LTI
 PYLTI_CONFIG = {
-    'consumers': {
-        CONSUMER_KEY: {
-            "secret": SHARED_SECRET
-        }
+    "consumers": {
+        CONSUMER_KEY: {"secret": SHARED_SECRET}
         # Feel free to add more key/secret pairs for other consumers.
     },
-    'roles': {
+    "roles": {
         # Maps values sent in the lti launch value of "roles" to a group
         # Allows you to check LTI.is_role('admin') for your user
-        'admin': ['Administrator', 'urn:lti:instrole:ims/lis/Administrator'],
-        'student': ['Student', 'urn:lti:instrole:ims/lis/Student']
-    }
+        "admin": ["Administrator", "urn:lti:instrole:ims/lis/Administrator"],
+        "student": ["Student", "urn:lti:instrole:ims/lis/Student"],
+    },
 }

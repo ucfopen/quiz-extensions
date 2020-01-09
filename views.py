@@ -687,7 +687,7 @@ def filter(lti=lti, course_id=None):
 
 @app.route("/launch", methods=["POST"])
 @lti(error=error, request="initial", role="staff", app=app)
-def lti_tool(lti=lti):  # pragma: no cover
+def lti_tool(lti=lti):
     """
     Bootstrapper for lti.
     """
@@ -712,7 +712,3 @@ def lti_tool(lti=lti):  # pragma: no cover
     session["lti_logged_in"] = True
 
     return redirect(url_for("quiz", course_id=course_id))
-
-
-def was_nonce_used_in_last_x_minutes(nonce, minutes):  # pragma: no cover
-    return False
