@@ -1,8 +1,9 @@
 *.pyc
+*.bak
 .coverage
 .DS_Store
 config.py
-/venv
-/env
+/venv*
+/env*
 /htmlcov
 /logs

@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/ucfopen/quiz-extensions.svg?branch=master)](https://travis-ci.org/ucfopen/quiz-extensions)
+[![Coverage Status](https://coveralls.io/repos/github/ucfopen/quiz-extensions/badge.svg)](https://coveralls.io/github/ucfopen/quiz-extensions)
 [![Join UCF Open Slack Discussions](https://ucf-open-slackin.herokuapp.com/badge.svg)](https://ucf-open-slackin.herokuapp.com/)
 
 A self-service LTI for faculty to easily extend time for multiple users for

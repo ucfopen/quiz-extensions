@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import unicode_literals
-
 from collections import defaultdict
 import json
 import math
 import requests
-from urlparse import parse_qs, urlsplit
+from urllib.parse import parse_qs, urlsplit
 
 import config
 from models import Quiz
@@ -15,12 +13,12 @@ import logging
 from logging.config import dictConfig
 
 dictConfig(config.LOGGING_CONFIG)
-logger = logging.getLogger('app')
+logger = logging.getLogger("app")
 
-headers = {'Authorization': 'Bearer ' + config.API_KEY}
+headers = {"Authorization": "Bearer " + config.API_KEY}
 json_headers = {
-    'Authorization': 'Bearer ' + config.API_KEY,
-    'Content-type': 'application/json'
+    "Authorization": "Bearer " + config.API_KEY,
+    "Content-type": "application/json",
 }
 
 
@@ -43,48 +41,43 @@ def extend_quiz(course_id, quiz, percent, user_id_list):
         - added_time `int` The amount of time added in minutes. Returns
         `None` if there was no time added.
     """
-    quiz_id = quiz.get('id')
-    time_limit = quiz.get('time_limit')
+    quiz_id = quiz.get("id")
+    time_limit = quiz.get("time_limit")
 
     if time_limit is None or time_limit < 1:
-        msg = 'Quiz #{} has no time limit, so there is no time to add.'
-        return {
-            'success': True,
-            'message': msg.format(quiz_id),
-            'added_time': None
-        }
+        msg = "Quiz #{} has no time limit, so there is no time to add."
+        return {"success": True, "message": msg.format(quiz_id), "added_time": None}
 
-    added_time = int(math.ceil(time_limit * ((float(percent) - 100) / 100) if percent else 0))
+    added_time = int(
+        math.ceil(time_limit * ((float(percent) - 100) / 100) if percent else 0)
+    )
 
     quiz_extensions = defaultdict(list)
 
     for user_id in user_id_list:
-        user_extension = {
-            'user_id': user_id,
-            'extra_time': added_time
-        }
-        quiz_extensions['quiz_extensions'].append(user_extension)
+        user_extension = {"user_id": user_id, "extra_time": added_time}
+        quiz_extensions["quiz_extensions"].append(user_extension)
 
     url_str = "{}courses/{}/quizzes/{}/extensions"
     extensions_response = requests.post(
         url_str.format(config.API_URL, course_id, quiz_id),
         data=json.dumps(quiz_extensions),
-        headers=json_headers
+        headers=json_headers,
     )
 
     if extensions_response.status_code == 200:
-        msg = 'Successfully added {} minutes to quiz #{}'
+        msg = "Successfully added {} minutes to quiz #{}"
         return {
-            'success': True,
-            'message': msg.format(added_time, quiz_id),
-            'added_time': added_time
+            "success": True,
+            "message": msg.format(added_time, quiz_id),
+            "added_time": added_time,
         }
     else:
-        msg = 'Error creating extension for quiz #{}. Canvas status code: {}'
+        msg = "Error creating extension for quiz #{}. Canvas status code: {}"
         return {
-            'success': False,
-            'message': msg.format(quiz_id, extensions_response.status_code),
-            'added_time': None
+            "success": False,
+            "message": msg.format(quiz_id, extensions_response.status_code),
+            "added_time": None,
         }
 
 
@@ -101,9 +94,7 @@ def get_quizzes(course_id, per_page=config.MAX_PER_PAGE):
     """
     quizzes = []
     quizzes_url = "{}courses/{}/quizzes?per_page={}".format(
-        config.API_URL,
-        course_id,
-        per_page
+        config.API_URL, course_id, per_page
     )
 
     while True:
@@ -111,20 +102,22 @@ def get_quizzes(course_id, per_page=config.MAX_PER_PAGE):
 
         quizzes_list = quizzes_response.json()
 
-        if 'errors' in quizzes_list:
+        if "errors" in quizzes_list:
             break
 
         quizzes.extend(quizzes_list)
 
         try:
-            quizzes_url = quizzes_response.links['next']['url']
+            quizzes_url = quizzes_response.links["next"]["url"]
         except KeyError:
             break
 
     return quizzes
 
 
-def search_students(course_id, per_page=config.DEFAULT_PER_PAGE, page=1, search_term=""):
+def search_students(
+    course_id, per_page=config.DEFAULT_PER_PAGE, page=1, search_term=""
+):
     """
     Search for students in the course.
 
@@ -141,19 +134,15 @@ def search_students(course_id, per_page=config.DEFAULT_PER_PAGE, page=1, search_
     """
     url_str = "{}courses/{}/search_users?per_page={}&page={}&access_token={}"
     users_url = url_str.format(
-        config.API_URL,
-        course_id,
-        per_page,
-        page,
-        config.API_KEY
+        config.API_URL, course_id, per_page, page, config.API_KEY
     )
 
     users_response = requests.get(
         users_url,
         data={
-            'search_term': search_term,
-            'enrollment_type': 'student',
-            'enrollment_state': ['active']
+            "search_term": search_term,
+            "enrollment_type": "student",
+            "enrollment_state": ["active"],
         },
         headers=headers,
     )
@@ -162,21 +151,17 @@ def search_students(course_id, per_page=config.DEFAULT_PER_PAGE, page=1, search_
         user_list = users_response.json()
     except ValueError:
         # response is weird. log it!
-        logger.exception('Error getting user list from Canvas.')
+        logger.exception("Error getting user list from Canvas.")
         return [], 0
 
-    if 'errors' in user_list:
-        msg = 'Error getting user list from Canvas. Response: {}'
+    if "errors" in user_list:
+        msg = "Error getting user list from Canvas. Response: {}"
         logger.error(msg.format(users_response))
         return [], 0
 
     try:
         num_pages = int(
-            parse_qs(
-                urlsplit(
-                    users_response.links['last']['url']
-                ).query
-            )['page'][0]
+            parse_qs(urlsplit(users_response.links["last"]["url"]).query)["page"][0]
         )
     except KeyError:
         num_pages = 0
@@ -196,13 +181,9 @@ def get_user(course_id, user_id):
     :returns: A dictionary representation of a User in Canvas.
     """
     response = requests.get(
-        '{}courses/{}/users/{}'.format(
-            config.API_URL,
-            course_id,
-            user_id
-        ),
-        params={'include[]': 'enrollments'},
-        headers=headers
+        "{}courses/{}/users/{}".format(config.API_URL, course_id, user_id),
+        params={"include[]": "enrollments"},
+        headers=headers,
     )
     response.raise_for_status()
 
@@ -262,7 +243,7 @@ def missing_quizzes(course_id, quickcheck=False):
     missing_list = []
 
     for canvas_quiz in quizzes:
-        quiz = Quiz.query.filter_by(canvas_id=canvas_quiz.get('id')).first()
+        quiz = Quiz.query.filter_by(canvas_id=canvas_quiz.get("id")).first()
 
         if quiz:
             # Already exists. Next!
@@ -278,9 +259,9 @@ def missing_quizzes(course_id, quickcheck=False):
 
 
 def update_job(job, percent, status_msg, status, error=False):
-    job.meta['percent'] = percent
-    job.meta['status'] = status
-    job.meta['status_msg'] = status_msg
-    job.meta['error'] = error
+    job.meta["percent"] = percent
+    job.meta["status"] = status
+    job.meta["status_msg"] = status_msg
+    job.meta["error"] = error
 
     job.save()
