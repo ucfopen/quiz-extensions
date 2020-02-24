@@ -1,12 +1,12 @@
 -r requirements.txt
 
 black
-blinker==1.4
+blinker
 coverage
-fakeredis==1.2.1
+fakeredis
 flake8
 # Flask-Testing
-requests-mock==1.7.0
+requests-mock
 oauthlib
 
 # temporary install of Flask-Testing until Werkzeug >= 1.0.0 compatibility is fixed
