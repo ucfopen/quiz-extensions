@@ -2,9 +2,12 @@
 
 black
 blinker==1.4
-coverage==4.5.1
-fakeredis==0.14.0
+coverage
+fakeredis==1.2.1
 flake8
-Flask-Testing==0.7.1
-requests-mock==1.5.2
+# Flask-Testing
+requests-mock==1.7.0
 oauthlib
+
+# temporary install of Flask-Testing until Werkzeug >= 1.0.0 compatibility is fixed
+-e git+https://github.com/jarus/flask-testing.git@master#egg=Flask-Testing
