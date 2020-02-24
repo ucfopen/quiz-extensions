@@ -7,4 +7,5 @@ mysqlclient==1.4.5
 redis==3.3.11
 requests==2.22.0
 rq==1.1.0
+six>=1.14.0
 Werkzeug>=1.0.0  # Chrome 80 SameSite fix
