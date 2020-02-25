@@ -77,3 +77,7 @@ PYLTI_CONFIG = {
         "student": ["Student", "urn:lti:instrole:ims/lis/Student"],
     },
 }
+
+# Chrome 80 SameSite=None; Secure fix
+SESSION_COOKIE_SECURE = True
+SESSION_COOKIE_SAMESITE = "None"
