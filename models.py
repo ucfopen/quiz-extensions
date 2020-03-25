@@ -75,9 +75,11 @@ class Quiz(db.Model):
     last_updated_date = db.Column(
         db.DateTime, server_default=db.func.now(), onupdate=db.func.now()
     )
+    time_limit = db.Column(db.Integer, nullable=True)
     title = db.Column(db.String(250))
 
-    def __init__(self, canvas_id, course_id, title=None):
+    def __init__(self, canvas_id, course_id, title=None, time_limit=None):
         self.canvas_id = canvas_id
         self.course_id = course_id
         self.title = title
+        self.time_limit = time_limit
