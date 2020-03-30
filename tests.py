@@ -572,7 +572,7 @@ class ViewTests(flask_testing.TestCase):
         self.assertEqual(job_result["percent"], 0)
         self.assertTrue(job_result["error"])
 
-    def test_refresh_background_no_missing_quizzes(self, m):
+    def test_refresh_background_no_missing_and_stale_quizzes(self, m):
         from views import refresh_background
 
         with self.client.session_transaction() as sess:
@@ -882,26 +882,26 @@ class ViewTests(flask_testing.TestCase):
         self.assertEqual(job_result["status_msg"], "2 quizzes have been updated.")
         self.assertEqual(job_result["percent"], 100)
 
-    def test_missing_quizzes_check_no_course(self, m):
+    def test_missing_and_stale_quizzes_check_no_course(self, m):
         course_id = 1
-        response = self.client.get("/missing_quizzes/{}/".format(course_id))
+        response = self.client.get("/missing_and_stale_quizzes/{}/".format(course_id))
 
         self.assert_200(response)
         self.assertEqual(response.data, b"false")
 
-    def test_missing_quizzes_check_no_extensions(self, m):
+    def test_missing_and_stale_quizzes_check_no_extensions(self, m):
         course_id = 1
 
         course = Course(canvas_id=course_id, course_name="test")
         views.db.session.add(course)
         views.db.session.commit()
 
-        response = self.client.get("/missing_quizzes/{}/".format(course_id))
+        response = self.client.get("/missing_and_stale_quizzes/{}/".format(course_id))
 
         self.assert_200(response)
         self.assertEqual(response.data, b"false")
 
-    def test_missing_quizzes_check_true(self, m):
+    def test_missing_and_stale_quizzes_check_true(self, m):
         m.register_uri(
             "GET", "/api/v1/courses/1/quizzes", json=[{"id": 1, "title": "Quiz 1"}]
         )
@@ -916,12 +916,12 @@ class ViewTests(flask_testing.TestCase):
         views.db.session.add(extension)
         views.db.session.commit()
 
-        response = self.client.get("/missing_quizzes/{}/".format(course_id))
+        response = self.client.get("/missing_and_stale_quizzes/{}/".format(course_id))
 
         self.assert_200(response)
         self.assertEqual(response.data, b"true")
 
-    def test_missing_quizzes_check_false(self, m):
+    def test_missing_and_stale_quizzes_check_false(self, m):
         m.register_uri(
             "GET", "/api/v1/courses/1/quizzes", json=[{"id": 1, "title": "Quiz 1"}]
         )
@@ -940,7 +940,7 @@ class ViewTests(flask_testing.TestCase):
         views.db.session.add(extension)
         views.db.session.commit()
 
-        response = self.client.get("/missing_quizzes/{}/".format(course_id))
+        response = self.client.get("/missing_and_stale_quizzes/{}/".format(course_id))
 
         self.assert_200(response)
         self.assertEqual(response.data, b"false")
@@ -1329,8 +1329,8 @@ class UtilTests(flask_testing.TestCase):
         self.assertEqual(quiz.course_id, course_id)
         self.assertEqual(quiz.title, quiz_title)
 
-    def test_missing_quizzes(self, m):
-        from utils import missing_quizzes
+    def test_missing_and_stale_quizzes(self, m):
+        from utils import missing_and_stale_quizzes
 
         m.register_uri(
             "GET",
@@ -1346,14 +1346,14 @@ class UtilTests(flask_testing.TestCase):
         views.db.session.add(quiz_obj)
         views.db.session.commit()
 
-        response = missing_quizzes(1)
+        response = missing_and_stale_quizzes(1)
         self.assertIsInstance(response, list)
         self.assertEqual(len(response), 2)
         self.assertEqual(response[0]["title"], "Quiz 1")
         self.assertEqual(response[1]["title"], "Quiz 3")
 
-    def test_missing_quizzes_no_missing(self, m):
-        from utils import missing_quizzes
+    def test_missing_and_stale_quizzes_no_missing(self, m):
+        from utils import missing_and_stale_quizzes
 
         m.register_uri(
             "GET", "/api/v1/courses/1/quizzes", json=[{"id": 1, "title": "Quiz 1"}]
@@ -1363,12 +1363,37 @@ class UtilTests(flask_testing.TestCase):
         views.db.session.add(quiz_obj)
         views.db.session.commit()
 
-        response = missing_quizzes(1, quickcheck=True)
+        response = missing_and_stale_quizzes(1, quickcheck=True)
         self.assertIsInstance(response, list)
         self.assertEqual(len(response), 0)
 
-    def test_missing_quizzes_quickcheck(self, m):
-        from utils import missing_quizzes
+    def test_missing_and_stale_quizzes_updated_time_limit(self, m):
+        from utils import missing_and_stale_quizzes
+
+        m.register_uri(
+            "GET",
+            "/api/v1/courses/1/quizzes",
+            json=[
+                {"id": 1, "title": "Quiz 1", "time_limit": 60},  # remains 60
+                {"id": 2, "title": "Quiz 2", "time_limit": 120},  # updated to 120
+            ],
+        )
+
+        #
+        quiz1 = Quiz(course_id=1, canvas_id=1, title="Quiz 1", time_limit=60)
+        views.db.session.add(quiz1)
+        quiz2 = Quiz(course_id=2, canvas_id=2, title="Quiz 2", time_limit=60)
+        views.db.session.add(quiz2)
+        views.db.session.commit()
+
+        response = missing_and_stale_quizzes(1)
+        self.assertIsInstance(response, list)
+        self.assertEqual(len(response), 1)
+        self.assertEqual(response[0]["title"], "Quiz 2")
+        self.assertEqual(response[0]["time_limit"], 120)
+
+    def test_missing_and_stale_quizzes_quickcheck(self, m):
+        from utils import missing_and_stale_quizzes
 
         m.register_uri(
             "GET",
@@ -1384,7 +1409,29 @@ class UtilTests(flask_testing.TestCase):
         views.db.session.add(quiz_obj)
         views.db.session.commit()
 
-        response = missing_quizzes(1, quickcheck=True)
+        response = missing_and_stale_quizzes(1, quickcheck=True)
         self.assertIsInstance(response, list)
         self.assertEqual(len(response), 1)
         self.assertEqual(response[0]["title"], "Quiz 1")
+
+    def test_missing_and_stale_quizzes_quickcheck_first_item_exists(self, m):
+        from utils import missing_and_stale_quizzes
+
+        m.register_uri(
+            "GET",
+            "/api/v1/courses/1/quizzes",
+            json=[
+                {"id": 1, "title": "Quiz 1"},
+                {"id": 2, "title": "Quiz 2"},
+                {"id": 3, "title": "Quiz 3"},
+            ],
+        )
+
+        quiz_obj = Quiz(course_id=1, canvas_id=1, title="Quiz 1")
+        views.db.session.add(quiz_obj)
+        views.db.session.commit()
+
+        response = missing_and_stale_quizzes(1, quickcheck=True)
+        self.assertIsInstance(response, list)
+        self.assertEqual(len(response), 1)
+        self.assertEqual(response[0]["title"], "Quiz 2")

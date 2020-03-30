@@ -4,4 +4,4 @@ coverage run -m unittest discover
 coverage report
 coverage html
 flake8 .
-black --check . --exclude env
+black --check . --exclude "env|migrations"

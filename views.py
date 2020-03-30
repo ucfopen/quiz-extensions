@@ -31,7 +31,7 @@ from utils import (
     get_or_create,
     get_quizzes,
     get_user,
-    missing_quizzes,
+    missing_and_stale_quizzes,
     search_students,
     update_job,
 )
@@ -439,6 +439,7 @@ def update_background(course_id, extension_dict):
                     db.session, Quiz, canvas_id=quiz_id, course_id=course.id
                 )
                 quiz_obj.title = quiz_title
+                quiz_obj.time_limit = quiz.get("time_limit")
 
                 db.session.commit()
 
@@ -511,8 +512,7 @@ def refresh_background(course_id):
 
             return job.meta
 
-        # quiz stuff
-        quizzes = missing_quizzes(course_id)
+        quizzes = missing_and_stale_quizzes(course_id)
 
         num_quizzes = len(quizzes)
 
@@ -614,6 +614,7 @@ def refresh_background(course_id):
                         db.session, Quiz, canvas_id=quiz_id, course_id=course.id
                     )
                     quiz_obj.title = quiz_title
+                    quiz_obj.time_limit = quiz.get("time_limit")
 
                     db.session.commit()
                 else:
@@ -629,8 +630,8 @@ def refresh_background(course_id):
         return job.meta
 
 
-@app.route("/missing_quizzes/<course_id>/", methods=["GET"])
-def missing_quizzes_check(course_id):
+@app.route("/missing_and_stale_quizzes/<course_id>/", methods=["GET"])
+def missing_and_stale_quizzes_check(course_id):
     """
     Check if there are missing quizzes.
 
@@ -650,7 +651,7 @@ def missing_quizzes_check(course_id):
         # There are no extensions for this course yet. No need to update.
         return "false"
 
-    missing = len(missing_quizzes(course_id, True)) > 0
+    missing = len(missing_and_stale_quizzes(course_id, True)) > 0
     return json.dumps(missing)
 
 

@@ -225,18 +225,19 @@ def get_or_create(session, model, **kwargs):
         return instance, True
 
 
-def missing_quizzes(course_id, quickcheck=False):
+def missing_and_stale_quizzes(course_id, quickcheck=False):
     """
-    Find all quizzes that are in Canvas but not in the database.
+    Find all quizzes that are in Canvas but not in the database (missing),
+    or have an old time limit (stale)
 
     :param course_id: The Canvas ID of the Course.
     :type course_id: int
     :param quickcheck: Setting this to `True` will return when the
-        first missinq quiz is found.
+        first missing or stale quiz is found.
     :type quickcheck: bool
     :rtype: list
     :returns: A list of dictionaries representing missing quizzes. If
-        quickcheck is true, only the first result is returned.
+        quickcheck is true, only the first missing/stale result is returned.
     """
     quizzes = get_quizzes(course_id)
 
@@ -245,15 +246,13 @@ def missing_quizzes(course_id, quickcheck=False):
     for canvas_quiz in quizzes:
         quiz = Quiz.query.filter_by(canvas_id=canvas_quiz.get("id")).first()
 
-        if quiz:
-            # Already exists. Next!
-            continue
+        # quiz is missing or time limit has changed
+        if not quiz or quiz.time_limit != canvas_quiz.get("time_limit"):
+            missing_list.append(canvas_quiz)
 
-        missing_list.append(canvas_quiz)
-
-        if quickcheck:
-            # Found one! Quickcheck complete.
-            break
+            if quickcheck:
+                # Found one! Quickcheck complete.
+                break
 
     return missing_list
 
