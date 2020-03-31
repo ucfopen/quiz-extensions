@@ -1,5 +1,21 @@
 # Change Log
 
+## [4.0.0] - 2020-03-31
+
+### General
+
+- Added GitHub-specific files:
+  - Code owners
+  - Issue template
+  - Pull request template
+
+### Bugfixes
+
+- Fixed an issue where session cookies would be blocked due to SameSite restrictions.
+  - **Note:** requires `config.py` update as shown in `config.py.template`
+- Fixed an issue where Quiz Extensions would ignore changes to quiz time limits when looking for updated quizzes.
+  - **Note:** requires database migration to be run with `flask db upgrade`
+
 ## [3.1.1] - 2018-12-19
 
 ### Bugfixes
@@ -44,6 +60,7 @@
 
 - Initial release
 
+[4.0.0]: https://github.com/ucfopen/quiz-extensions/compare/v3.1.1...v4.0.0
 [3.1.1]: https://github.com/ucfopen/quiz-extensions/compare/v3.1.0...v3.1.1
 [3.1.0]: https://github.com/ucfopen/quiz-extensions/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/ucfopen/quiz-extensions/compare/v2.0.0...v3.0.0

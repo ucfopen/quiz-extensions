@@ -423,7 +423,7 @@ function checkIfEmpty() {
 	}
 }
 
-function ajax_check_missing_quizzes(course_id) {
+function ajax_check_missing_and_stale_quizzes(course_id) {
 	var xhttp = new XMLHttpRequest();
 
 	xhttp.onreadystatechange = function() {
@@ -440,7 +440,7 @@ function ajax_check_missing_quizzes(course_id) {
 			}
 		}
 	};
-	xhttp.open("GET", missing_quizzes_url, true);
+	xhttp.open("GET", missing_and_stale_quizzes_url, true);
 	xhttp.send();
 }
 
@@ -449,7 +449,7 @@ function load_func() {
 	ajaxFilter("", 1, update_user_list);
 
 	// check for missing quizzes
-	ajax_check_missing_quizzes(course_id);
+	ajax_check_missing_and_stale_quizzes(course_id);
 }
 
 window.onload = load_func;
