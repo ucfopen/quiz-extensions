@@ -92,10 +92,10 @@ Install required packages
   pip install -r requirements.txt
   ```
 
-* Create logs folder
-  ```sh
-  mkdir logs
-  ```
+Create logs folder
+```sh
+mkdir logs
+```
 
 Set `FLASK_APP` environment variable
 
