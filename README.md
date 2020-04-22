@@ -14,7 +14,14 @@ all quizzes at once.
 
 # Installation
 
-## Development Installation
+## Requirements
+
+* Python 3
+* nginx + uWSGI or Apache2 + mod_wsgi
+* MySQL >= 5.6
+* Redis
+
+## Core Installation
 
 ```sh
 git clone git@github.com:ucfopen/quiz-extensions.git
@@ -96,6 +103,8 @@ Migrate database
 flask db upgrade
 ```
 
+## Dev
+
 Run the server
 
 ```sh
@@ -116,8 +125,12 @@ rq worker quizext
 
 ## Production Installation
 
+### Ubuntu / Apache2 + mod_wsgi
+
 This is for an Ubuntu 16.xx install but should work for other Debian/ubuntu
 based installs using Apache and mod_wsgi.
+
+We are cloning and installing quiz-extensions to our /var/www/ directory.
 
 ```sh
 sudo apt-get update
@@ -137,6 +150,17 @@ source env/bin/activate
 
 sudo env/bin/pip install -r requirements.txt
 
+sudo cp config.py.template config.py
+sudo nano config.py
+
+```
+
+Now setup your config.py like shown in *Core Installation* above.
+
+
+Now it's time to setup Apache:
+
+```
 sudo nano /etc/apache2/sites-available/000-default.conf
 ```
 
@@ -164,42 +188,10 @@ Then:
 
 ```sh
 sudo service apache2 reload
-
-sudo cp config.py.template config.py
-
-sudo nano config.py
 ```
 
-Edit your config.py and change the variables to match your server:
-
-```python
-DEBUG = False  # Leave False on production
-
-API_URL = ''  # Canvas API URL (e.g. 'http://example.com/api/v1/')
-API_KEY = ''  # Canvas API Key
-
-# The default number of objects the Canvas API will return per page (usually 10)
-DEFAULT_PER_PAGE = 10
-# The maximum amount of objects the Canvas API will return per page (usually 100)
-MAX_PER_PAGE = 100
-
-# A secret key used by Flask for signing. KEEP THIS SECRET! (e.g. 'Ro0ibrkb4Z4bZmz1f5g1+/16K19GH/pa')
-SECRET_KEY = ''
-
-LTI_KEY = ''  # Consumer Key
-LTI_SECRET = ''  # Shared Secret
-
-LTI_TOOL_ID = ''  # A unique ID for the tool
-LTI_DOMAIN = ''  # Domain hosting the LTI
-
-SQLALCHEMY_DATABASE_URI = ''  # URI for database. (e.g. 'mysql://root:root@localhost/quiz_extensions')
-```
-
-Finally:
-
-```sh
-sudo service apache2 reload
-```
+### nginx + uwsgi
+Coming Soon
 
 # Third Party Licenses
 
