@@ -8,7 +8,8 @@ all quizzes at once.
 # Table of Contents
 
 * [Installation](#installation)
-  * [Development Installation](#development-installation)
+  * [Core Installation](#core-installation)
+  * [Development Server](#development-server)
   * [Production Installation](#production-installation)
 * [Third Party Licenses](#third-party-licenses)
 
@@ -39,7 +40,7 @@ Create the config file from the template
 cp config.py.template config.py
 ```
 
-Fill in the config file
+Fill in these config file variables:
 
 ```python
 API_URL = ''  # Canvas API URL (e.g. 'http://example.com/api/v1/')
@@ -91,6 +92,11 @@ Install required packages
   pip install -r requirements.txt
   ```
 
+* Create logs folder
+  ```sh
+  mkdir logs
+  ```
+
 Set `FLASK_APP` environment variable
 
 ```sh
@@ -103,7 +109,7 @@ Migrate database
 flask db upgrade
 ```
 
-## Dev
+## Development Server
 
 Run the server
 
@@ -155,7 +161,8 @@ sudo nano config.py
 
 ```
 
-Now setup your config.py like shown in *Core Installation* above.
+Now setup your config.py like shown in *Core Installation* above.  
+If Apache can't find the log file, you may have to include the full path under logging.
 
 
 Now it's time to setup Apache:
