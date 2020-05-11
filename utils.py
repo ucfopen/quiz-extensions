@@ -141,8 +141,8 @@ def search_students(
         users_url,
         data={
             "search_term": search_term,
-            "enrollment_type": "student",
-            "enrollment_state": ["active"],
+            "enrollment_type[]": ["student"],
+            "enrollment_state[]": ["active", "invited"],
         },
         headers=headers,
     )
