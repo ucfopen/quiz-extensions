@@ -551,7 +551,9 @@ def refresh_background(course_id):
                 # student that previously recieved an extension changes roles.
                 enrolls = canvas_user.get("enrollments", [])
                 type_list = [
-                    e["type"] for e in enrolls if e["enrollment_state"] == "active"
+                    e["type"]
+                    for e in enrolls
+                    if e["enrollment_state"] in ("active", "invited")
                 ]
                 if not any(t == "StudentEnrollment" for t in type_list):
                     logger.info(
