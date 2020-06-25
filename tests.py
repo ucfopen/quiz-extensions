@@ -150,7 +150,7 @@ class ViewTests(flask_testing.TestCase):
             sess["lti_logged_in"] = True
             sess["is_admin"] = True
             sess[LTI_SESSION_KEY] = True
-            sess["roles"] = "Administrator"
+            sess["roles"] = "urn:lti:instrole:ims/lis/Administrator"
 
         course_id = 1
 
@@ -967,7 +967,7 @@ class ViewTests(flask_testing.TestCase):
             sess[LTI_SESSION_KEY] = True
             sess["canvas_user_id"] = 1234
             sess["lti_logged_in"] = True
-            sess["roles"] = "Administrator"
+            sess["roles"] = "urn:lti:instrole:ims/lis/Administrator"
             sess["is_admin"] = True
 
         m.register_uri(
@@ -1028,7 +1028,7 @@ class ViewTests(flask_testing.TestCase):
             "/launch",
             http_method="POST",
             body=payload,
-            roles="Administrator",
+            roles="urn:lti:instrole:ims/lis/Administrator",
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
@@ -1037,6 +1037,29 @@ class ViewTests(flask_testing.TestCase):
         with self.client.session_transaction() as session:
             self.assertRedirects(response, "/quiz/1/")
             self.assertTrue(session.get("is_admin"))
+
+    def test_lti_tool_bad_domain(self, m):
+        payload = {
+            "launch_presentation_return_url": "http://localhost/",
+            "custom_canvas_api_domain": "example.com",
+            "custom_canvas_user_id": "1",
+            "custom_canvas_course_id": "1",
+        }
+
+        signed_url = self.generate_launch_request(
+            "/launch",
+            http_method="POST",
+            body=payload,
+            roles="urn:lti:instrole:ims/lis/Administrator",
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+
+        response = self.client.post(signed_url, data=payload,)
+
+        self.assert_template_used("error.html")
+        self.assertIn(
+            b"This tool is only available from the following domain(s):", response.data,
+        )
 
     @staticmethod
     def generate_launch_request(

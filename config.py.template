@@ -72,9 +72,13 @@ PYLTI_CONFIG = {
     },
     "roles": {
         # Maps values sent in the lti launch value of "roles" to a group
-        # Allows you to check LTI.is_role('admin') for your user
-        "admin": ["Administrator", "urn:lti:instrole:ims/lis/Administrator"],
-        "student": ["Student", "urn:lti:instrole:ims/lis/Student"],
+        # Allows you to check LTI.is_role('staff') for your user
+        "staff": [
+            "urn:lti:instrole:ims/lis/Administrator",
+            "Instructor",
+            # 'ContentDeveloper',
+            # 'urn:lti:role:ims/lis/TeachingAssistant'
+        ]
     },
 }
 
