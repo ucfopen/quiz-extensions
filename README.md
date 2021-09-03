@@ -14,6 +14,38 @@ all quizzes at once.
 
 # Installation
 
+## Docker
+
+## Development 
+
+First you will need to clone the repo, and create the environment file from the template.  
+
+
+```sh
+git clone git@github.com:ucfopen/quiz-extensions.git
+cd quiz-extensions
+cp .env.template .env
+
+```
+You will then want to edit the .env environment variabels file to match your Canvas domain, api url, and api key.
+
+After Docker builds and starts the services, you will run the migration commands to create the database.
+
+```sh
+docker-compose build
+docker-compose up -d
+docker-compose exec lti bash
+python
+from views import db, app
+with app.app_context():
+    db.create_all()
+```
+
+Quiz Extensions will now be available at: http://127.0.0.1:9001 and the XML available at http://127.0.0.1:9001/lti.xml
+
+
+
+
 ## Development Installation
 
 ```sh

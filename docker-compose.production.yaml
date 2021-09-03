@@ -1,0 +1,48 @@
+version: '3.1'
+
+services:
+  lti:
+    build:
+      context: .
+      args:
+        - "REQUIREMENTS=${REQUIREMENTS}"
+    volumes:
+    - .:/app
+    - $PWD/devops/nginx.conf:/app/nginx.conf
+    - $PWD/devops/uwsgi.ini:/app/uwsgi.ini
+    ports:
+      - "80:80"
+    env_file:
+      - .env
+    environment:
+      - MODULE_NAME=app
+  
+  worker:
+    build:
+      context: .
+      args:
+        - "REQUIREMENTS=${REQUIREMENTS}"
+    volumes:
+    - .:/app
+    command: rq worker -c config quizext
+    env_file:
+      - .env
+
+
+#   db:
+#     image: mariadb
+#     volumes:
+#       - quizext_db_data:/var/lib/mysql
+#     restart: always
+#     env_file: .env
+#     ports:
+#       - 3306:3306
+
+#   redis:
+#     image: redis
+#     restart: always
+#     ports:
+#       - 6379:6379
+
+# volumes:
+#   quizext_db_data: {}

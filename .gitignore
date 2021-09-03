@@ -3,7 +3,6 @@
 .coverage
 .DS_Store
 .python-version
-config.py
 /venv*
 /env*
 /htmlcov
