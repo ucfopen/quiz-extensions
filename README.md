@@ -43,7 +43,22 @@ with app.app_context():
 
 Quiz Extensions will now be available at: http://127.0.0.1:9001 and the XML available at http://127.0.0.1:9001/lti.xml
 
+## Production
 
+In a production setting, we expect that there is an external Redis server running as well as a DB server available for Quiz Extensions.
+
+Once you have edited the .env file, you will want to run `docker-compose -f docker-compose.production.yml up -d` to bring up the services. 
+
+If you have not created your database yet, you can do so with these commands:
+
+```sh
+docker-compose exec lti bash
+python
+from views import db, app
+with app.app_context():
+    db.create_all()
+
+```
 
 
 ## Development Installation
