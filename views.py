@@ -206,7 +206,7 @@ def xml():
     domain = urlparse(request.url_root).netloc
 
     return Response(
-        render_template("lti.xml", tool_id=config.LTI_TOOL_ID, domain=domain,),
+        render_template("lti.xml", tool_id=config.LTI_TOOL_ID, domain=domain),
         mimetype="application/xml",
     )
 
@@ -612,9 +612,7 @@ def refresh_background(course_id):
                 else:
                     error_message = "Some quizzes couldn't be updated. "
                     error_message += extension_response.get("message", "")
-                    update_job(
-                        job, comp_perc, error_message, "failed", error=True,
-                    )
+                    update_job(job, comp_perc, error_message, "failed", error=True)
                     return job.meta
 
         msg = "{} quizzes have been updated.".format(len(quizzes))
