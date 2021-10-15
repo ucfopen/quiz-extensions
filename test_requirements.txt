@@ -5,9 +5,6 @@ blinker
 coverage
 fakeredis
 flake8
-# Flask-Testing
+Flask-Testing>=0.8.1
 requests-mock
 oauthlib
-
-# temporary install of Flask-Testing until Werkzeug >= 1.0.0 compatibility is fixed
--e git+https://github.com/jarus/flask-testing.git@master#egg=Flask-Testing
