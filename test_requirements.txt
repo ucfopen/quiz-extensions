@@ -6,6 +6,7 @@ coverage
 fakeredis
 flake8
 # Flask-Testing
+isort
 requests-mock
 oauthlib
 

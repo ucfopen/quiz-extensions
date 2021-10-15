@@ -1,30 +1,23 @@
 # -*- coding: utf-8 -*-
+import json
+import logging
 from collections import defaultdict
 from functools import wraps
-import logging
 from logging.config import dictConfig
-import json
 from subprocess import call
 
-from flask import (
-    Flask,
-    render_template,
-    session,
-    request,
-    redirect,
-    url_for,
-    Response,
-)
-from flask_migrate import Migrate
-import requests
 import redis
+import requests
+from flask import Flask, Response, redirect, render_template, request, session, url_for
+from flask_migrate import Migrate
+from pylti.flask import lti
 from redis.exceptions import ConnectionError
-from rq import get_current_job, Queue
-from rq.job import Job
+from rq import Queue, get_current_job
 from rq.exceptions import NoSuchJobError
+from rq.job import Job
 
 import config
-from models import db, Course, Extension, Quiz, User
+from models import Course, Extension, Quiz, User, db
 from utils import (
     extend_quiz,
     get_course,
@@ -35,7 +28,6 @@ from utils import (
     search_students,
     update_job,
 )
-from pylti.flask import lti
 
 conn = redis.from_url(config.REDIS_URL)
 q = Queue("quizext", connection=conn)
