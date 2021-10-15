@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 
-from collections import defaultdict
 import json
+import logging
 import math
-import requests
+from collections import defaultdict
+from logging.config import dictConfig
 from urllib.parse import parse_qs, urlsplit
+
+import requests
 
 import config
 from models import Quiz
-
-import logging
-from logging.config import dictConfig
 
 dictConfig(config.LOGGING_CONFIG)
 logger = logging.getLogger("app")

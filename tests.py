@@ -1,18 +1,19 @@
 # -*- coding: utf-8 -*-
 import logging
+from urllib.parse import urlencode
 
-from flask import url_for, session
+import fakeredis
 import flask_testing
+import oauthlib.oauth1
 import requests
 import requests_mock
-import fakeredis
-from rq import Queue, SimpleWorker
+from flask import session, url_for
 from pylti.common import LTI_SESSION_KEY
-from urllib.parse import urlencode
-import oauthlib.oauth1
+from rq import Queue, SimpleWorker
+
 import config
-from models import Course, Extension, Quiz, User
 import views
+from models import Course, Extension, Quiz, User
 
 
 @requests_mock.Mocker()
