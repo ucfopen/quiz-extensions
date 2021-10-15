@@ -1009,13 +1009,11 @@ class ViewTests(flask_testing.TestCase):
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
-        response = self.client.post(signed_url, data=payload,)
+        response = self.client.post(signed_url, data=payload)
 
         self.assert_200(response)
         self.assert_template_used("error.html")
-        self.assertIn(
-            b"Not authorized", response.data,
-        )
+        self.assertIn(b"Not authorized", response.data)
 
     def test_lti_tool(self, m):
         payload = {
@@ -1033,7 +1031,7 @@ class ViewTests(flask_testing.TestCase):
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
-        response = self.client.post(signed_url, data=payload,)
+        response = self.client.post(signed_url, data=payload)
 
         with self.client.session_transaction() as session:
             self.assertRedirects(response, "/quiz/1/")
@@ -1203,9 +1201,7 @@ class UtilTests(flask_testing.TestCase):
     def test_search_students_malformed_response(self, m):
         from utils import search_students
 
-        m.register_uri(
-            "GET", "/api/v1/courses/1/search_users",
-        )
+        m.register_uri("GET", "/api/v1/courses/1/search_users")
         response = search_students(1)
 
         self.assertIsInstance(response, tuple)
@@ -1303,7 +1299,7 @@ class UtilTests(flask_testing.TestCase):
         course_id = 1
 
         quiz, created = get_or_create(
-            views.db.session, Quiz, canvas_id=quiz_id, course_id=course_id,
+            views.db.session, Quiz, canvas_id=quiz_id, course_id=course_id
         )
         self.assertTrue(created)
         self.assertIsInstance(quiz, Quiz)
