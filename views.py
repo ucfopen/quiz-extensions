@@ -15,6 +15,7 @@ from redis.exceptions import ConnectionError
 from rq import Queue, get_current_job
 from rq.exceptions import NoSuchJobError
 from rq.job import Job
+from sqlalchemy.sql import text
 
 import config
 from models import Course, Extension, Quiz, User, db
@@ -179,7 +180,7 @@ def status():  # pragma: no cover
 
     # Check DB connection
     try:
-        db.session.query("1").all()
+        db.session.query(text("1")).all()
         status["checks"]["db"] = True
     except Exception:
         logger.exception("DB connection failed.")
