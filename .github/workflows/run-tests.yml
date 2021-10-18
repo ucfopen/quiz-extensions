@@ -35,6 +35,8 @@ jobs:
         uses: psf/black@stable
       - name: Check import sorting
         uses: jamescurtin/isort-action@master
+        with:
+          requirementsFiles: "requirements.txt test_requirements.txt"
       - name: Lint markdown files
         uses: bewuethr/mdl-action@v1
       - name: Run tests
