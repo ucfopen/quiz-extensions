@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
-from urllib.parse import urlencode
 from unittest.mock import patch
+from urllib.parse import urlencode
 
 import fakeredis
 import flask_testing
