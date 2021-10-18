@@ -3,7 +3,7 @@ Flask-Migrate==2.5.2
 Flask-SQLAlchemy==2.4.1
 lxml==4.4.1
 mysqlclient==1.4.5
--e git+https://github.com/ucfcdl/pylti.git@f98b17229c3866ea66a15eb50e79af13b980e9af#egg=PyLTI
+git+https://github.com/ucfcdl/pylti.git@roles#egg=PyLTI
 redis==3.3.11
 requests==2.22.0
 rq==1.1.0
