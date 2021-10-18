@@ -1,11 +1,9 @@
-Flask==1.1.1
-Flask-Migrate==2.5.2
-Flask-SQLAlchemy==2.4.1
-lxml==4.4.1
-mysqlclient==1.4.5
+Flask==2.0.2
+Flask-Migrate==3.1.0
+Flask-SQLAlchemy==2.5.1
+lxml==4.6.3
+mysqlclient==2.0.3
 git+https://github.com/ucfcdl/pylti.git@roles#egg=PyLTI
-redis==3.3.11
-requests==2.22.0
-rq==1.1.0
-six>=1.14.0
-Werkzeug>=1.0.0  # Chrome 80 SameSite fix
+redis==3.5.3
+requests==2.26.0
+rq==1.10.0

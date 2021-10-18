@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 from urllib.parse import urlencode
+from unittest.mock import patch
 
 import fakeredis
 import flask_testing
@@ -1015,6 +1016,7 @@ class ViewTests(flask_testing.TestCase):
         self.assert_template_used("error.html")
         self.assertIn(b"Not authorized", response.data)
 
+    @patch("config.ALLOWED_CANVAS_DOMAINS", [config.TESTING_API_URL])
     def test_lti_tool(self, m):
         payload = {
             "launch_presentation_return_url": "http://localhost/",
