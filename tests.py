@@ -1,18 +1,20 @@
 # -*- coding: utf-8 -*-
 import logging
+from unittest.mock import patch
+from urllib.parse import urlencode
 
-from flask import url_for, session
+import fakeredis
 import flask_testing
+import oauthlib.oauth1
 import requests
 import requests_mock
-import fakeredis
-from rq import Queue, SimpleWorker
+from flask import session, url_for
 from pylti.common import LTI_SESSION_KEY
-from urllib.parse import urlencode
-import oauthlib.oauth1
+from rq import Queue, SimpleWorker
+
 import config
-from models import Course, Extension, Quiz, User
 import views
+from models import Course, Extension, Quiz, User
 
 
 @requests_mock.Mocker()
@@ -1008,14 +1010,13 @@ class ViewTests(flask_testing.TestCase):
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
-        response = self.client.post(signed_url, data=payload,)
+        response = self.client.post(signed_url, data=payload)
 
         self.assert_200(response)
         self.assert_template_used("error.html")
-        self.assertIn(
-            b"Not authorized", response.data,
-        )
+        self.assertIn(b"Not authorized", response.data)
 
+    @patch("config.ALLOWED_CANVAS_DOMAINS", [config.TESTING_API_URL])
     def test_lti_tool(self, m):
         payload = {
             "launch_presentation_return_url": "http://localhost/",
@@ -1032,7 +1033,7 @@ class ViewTests(flask_testing.TestCase):
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
-        response = self.client.post(signed_url, data=payload,)
+        response = self.client.post(signed_url, data=payload)
 
         with self.client.session_transaction() as session:
             self.assertRedirects(response, "/quiz/1/")
@@ -1225,9 +1226,7 @@ class UtilTests(flask_testing.TestCase):
     def test_search_students_malformed_response(self, m):
         from utils import search_students
 
-        m.register_uri(
-            "GET", "/api/v1/courses/1/search_users",
-        )
+        m.register_uri("GET", "/api/v1/courses/1/search_users")
         response = search_students(1)
 
         self.assertIsInstance(response, tuple)
@@ -1325,7 +1324,7 @@ class UtilTests(flask_testing.TestCase):
         course_id = 1
 
         quiz, created = get_or_create(
-            views.db.session, Quiz, canvas_id=quiz_id, course_id=course_id,
+            views.db.session, Quiz, canvas_id=quiz_id, course_id=course_id
         )
         self.assertTrue(created)
         self.assertIsInstance(quiz, Quiz)
