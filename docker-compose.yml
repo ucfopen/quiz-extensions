@@ -19,6 +19,7 @@ services:
       - .env
     environment:
       - MODULE_NAME=app
+      - FLASK_APP=views.py
   
   worker:
     build:

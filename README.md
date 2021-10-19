@@ -27,18 +27,19 @@ cd quiz-extensions
 cp .env.template .env
 
 ```
-You will then want to edit the .env environment variabels file to match your Canvas domain, api url, and api key.
+You will then want to edit the .env environment variables file to match your Canvas domain, api url, and api key.
 
-After Docker builds and starts the services, you will run the migration commands to create the database.
+Quiz Extensions uses Docker-Compose to build and start the services:
 
 ```sh
 docker-compose build
 docker-compose up -d
-docker-compose exec lti bash
-python
-from views import db, app
-with app.app_context():
-    db.create_all()
+```
+
+After Docker builds and starts the services, you will run the migration commands to create the database.
+
+```sh
+docker-compose exec lti flask db upgrade
 ```
 
 Quiz Extensions will now be available at: http://127.0.0.1:9001 and the XML available at http://127.0.0.1:9001/lti.xml
