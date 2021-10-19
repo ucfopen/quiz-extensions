@@ -1,30 +1,24 @@
 # -*- coding: utf-8 -*-
+import json
+import logging
 from collections import defaultdict
 from functools import wraps
-import logging
 from logging.config import dictConfig
-import json
 from subprocess import call
 
-from flask import (
-    Flask,
-    render_template,
-    session,
-    request,
-    redirect,
-    url_for,
-    Response,
-)
-from flask_migrate import Migrate
-import requests
 import redis
+import requests
+from flask import Flask, Response, redirect, render_template, request, session, url_for
+from flask_migrate import Migrate
+from pylti.flask import lti
 from redis.exceptions import ConnectionError
-from rq import get_current_job, Queue
-from rq.job import Job
+from rq import Queue, get_current_job
 from rq.exceptions import NoSuchJobError
+from rq.job import Job
+from sqlalchemy.sql import text
 
 import config
-from models import db, Course, Extension, Quiz, User
+from models import Course, Extension, Quiz, User, db
 from utils import (
     extend_quiz,
     get_course,
@@ -35,7 +29,6 @@ from utils import (
     search_students,
     update_job,
 )
-from pylti.flask import lti
 
 conn = redis.from_url(config.REDIS_URL)
 q = Queue("quizext", connection=conn)
@@ -187,7 +180,7 @@ def status():  # pragma: no cover
 
     # Check DB connection
     try:
-        db.session.query("1").all()
+        db.session.query(text("1")).all()
         status["checks"]["db"] = True
     except Exception:
         logger.exception("DB connection failed.")
@@ -214,7 +207,7 @@ def xml():
     domain = urlparse(request.url_root).netloc
 
     return Response(
-        render_template("lti.xml", tool_id=config.LTI_TOOL_ID, domain=domain,),
+        render_template("lti.xml", tool_id=config.LTI_TOOL_ID, domain=domain),
         mimetype="application/xml",
     )
 
@@ -622,9 +615,7 @@ def refresh_background(course_id):
                 else:
                     error_message = "Some quizzes couldn't be updated. "
                     error_message += extension_response.get("message", "")
-                    update_job(
-                        job, comp_perc, error_message, "failed", error=True,
-                    )
+                    update_job(job, comp_perc, error_message, "failed", error=True)
                     return job.meta
 
         msg = "{} quizzes have been updated.".format(len(quizzes))
