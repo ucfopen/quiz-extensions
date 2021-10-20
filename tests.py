@@ -1055,11 +1055,15 @@ class ViewTests(flask_testing.TestCase):
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
-        response = self.client.post(signed_url, data=payload,)
+        response = self.client.post(
+            signed_url,
+            data=payload,
+        )
 
         self.assert_template_used("error.html")
         self.assertIn(
-            b"This tool is only available from the following domain(s):", response.data,
+            b"This tool is only available from the following domain(s):",
+            response.data,
         )
 
     @staticmethod
