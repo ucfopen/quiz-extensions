@@ -1,5 +1,6 @@
 [![Build Status](https://github.com/ucfopen/quiz-extensions/actions/workflows/run-tests.yml/badge.svg)](https://github.com/ucfopen/quiz-extensions/actions/workflows/run-tests.yml/)
-[![Coverage Status](https://codecov.io/gh/ucfopen/quiz-extensions/branch/master/graphs/badge.svg?branch=master)](https://codecov.io/gh/ucfopen/quiz-extensions/branch/master/graphs/)
+[![Coverage Status](https://codecov.io/gh/ucfopen/quiz-extensions/branch/master/graph/badge.svg?token=7MfeVsKdxc)](https://codecov.io/gh/ucfopen/quiz-extensions)
+
 [![Join UCF Open Slack Discussions](https://ucf-open-slackin.herokuapp.com/badge.svg)](https://ucf-open-slackin.herokuapp.com/)
 
 A self-service LTI for faculty to easily extend time for multiple users for
