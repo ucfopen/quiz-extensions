@@ -8,6 +8,7 @@ from subprocess import call
 
 import redis
 import requests
+from canvasapi import Canvas
 from flask import Flask, Response, redirect, render_template, request, session, url_for
 from flask_migrate import Migrate
 from pylti.flask import lti
@@ -26,7 +27,6 @@ from utils import (
     get_quizzes,
     get_user,
     missing_and_stale_quizzes,
-    search_students,
     update_job,
 )
 
@@ -42,6 +42,9 @@ logger = logging.getLogger("app")
 
 db.init_app(app)
 migrate = Migrate(app, db)
+
+# CanvasAPI requires /api/v1/ to be removed
+canvas = Canvas(config.API_URL[:-8], config.API_KEY)
 
 json_headers = {
     "Authorization": "Bearer " + config.API_KEY,
@@ -222,9 +225,7 @@ def quiz(lti=lti, course_id=None):
     Displays a page to the user that allows them to select students
     to moderate quizzes for.
     """
-    return render_template(
-        "userselect.html", course_id=course_id, current_page_number=1
-    )
+    return render_template("userselect.html", course_id=course_id)
 
 
 @app.route("/refresh/<course_id>/", methods=["POST"])
@@ -655,28 +656,22 @@ def filter(lti=lti, course_id=None):
     """
     Display a filtered and paginated list of students in the course.
 
-    :param course_id:
+    :param course_id: The Canvas ID of the course to search in
     :type: int
     :rtype: str
-    :returns: A list of students in the course using the template
-        user_list.html.
+    :returns: A list of students in the course using the template user_list.html.
     """
 
     query = request.args.get("query", "").lower()
-    page = int(request.args.get("page", 1))
-    per_page = int(request.args.get("per_page", config.DEFAULT_PER_PAGE))
 
-    user_list, max_pages = search_students(
-        course_id, per_page=per_page, page=page, search_term=query
+    course = canvas.get_course(course_id)
+    user_list = course.get_users(
+        search_term=query,
+        enrollment_type=["student"],
+        enrollment_state=["active", "invited"],
     )
 
-    if not user_list or max_pages < 1:
-        user_list = []
-        max_pages = 1
-
-    return render_template(
-        "user_list.html", users=user_list, current_page_number=page, max_pages=max_pages
-    )
+    return render_template("user_list.html", users=user_list)
 
 
 @app.route("/launch", methods=["POST"])

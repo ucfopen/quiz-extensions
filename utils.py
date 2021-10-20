@@ -115,60 +115,6 @@ def get_quizzes(course_id, per_page=config.MAX_PER_PAGE):
     return quizzes
 
 
-def search_students(
-    course_id, per_page=config.DEFAULT_PER_PAGE, page=1, search_term=""
-):
-    """
-    Search for students in the course.
-
-    If no search term is provided, all users are returned.
-
-    :param course_id: The Canvas ID of a Course.
-    :type course_id: int
-    :param per_page: The number of students to get
-    :type per_page: int
-    :param page: The page number to get
-    :type page: int
-    :param search_term: A string to filter students by
-    :type search_term: str
-    """
-    url_str = "{}courses/{}/search_users?per_page={}&page={}&access_token={}"
-    users_url = url_str.format(
-        config.API_URL, course_id, per_page, page, config.API_KEY
-    )
-
-    users_response = requests.get(
-        users_url,
-        data={
-            "search_term": search_term,
-            "enrollment_type[]": ["student"],
-            "enrollment_state[]": ["active", "invited"],
-        },
-        headers=headers,
-    )
-
-    try:
-        user_list = users_response.json()
-    except ValueError:
-        # response is weird. log it!
-        logger.exception("Error getting user list from Canvas.")
-        return [], 0
-
-    if "errors" in user_list:
-        msg = "Error getting user list from Canvas. Response: {}"
-        logger.error(msg.format(users_response))
-        return [], 0
-
-    try:
-        num_pages = int(
-            parse_qs(urlsplit(users_response.links["last"]["url"]).query)["page"][0]
-        )
-    except KeyError:
-        num_pages = 0
-
-    return user_list, num_pages
-
-
 def get_user(course_id, user_id):
     """
     Get a user from canvas by id, with respect to a course.

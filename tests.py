@@ -1055,11 +1055,15 @@ class ViewTests(flask_testing.TestCase):
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
-        response = self.client.post(signed_url, data=payload,)
+        response = self.client.post(
+            signed_url,
+            data=payload,
+        )
 
         self.assert_template_used("error.html")
         self.assertIn(
-            b"This tool is only available from the following domain(s):", response.data,
+            b"This tool is only available from the following domain(s):",
+            response.data,
         )
 
     @staticmethod
@@ -1200,80 +1204,6 @@ class UtilTests(flask_testing.TestCase):
         response = get_quizzes(1)
         self.assertIsInstance(response, list)
         self.assertEqual(len(response), 0)
-
-    def test_search_students(self, m):
-        from utils import search_students
-
-        m.register_uri(
-            "GET",
-            "/api/v1/courses/1/search_users",
-            json=[{"id": 1, "name": "John Smith"}, {"id": 2, "name": "Jane Doe"}],
-            headers={
-                "Link": '<http://example.com/api/v1/courses/1/search_users?page=99>; rel="last"'
-            },
-        )
-
-        response = search_students(1)
-
-        self.assertIsInstance(response, tuple)
-
-        self.assertIsInstance(response[0], list)
-        self.assertEqual(len(response[0]), 2)
-
-        self.assertIsInstance(response[1], int)
-        self.assertEqual(response[1], 99)
-
-    def test_search_students_malformed_response(self, m):
-        from utils import search_students
-
-        m.register_uri("GET", "/api/v1/courses/1/search_users")
-        response = search_students(1)
-
-        self.assertIsInstance(response, tuple)
-
-        self.assertIsInstance(response[0], list)
-        self.assertEqual(len(response[0]), 0)
-
-        self.assertIsInstance(response[1], int)
-        self.assertEqual(response[1], 0)
-
-    def test_search_students_error(self, m):
-        from utils import search_students
-
-        m.register_uri(
-            "GET",
-            "/api/v1/courses/1/search_users",
-            json={"errors": {"message": "An error occurred."}},
-        )
-
-        response = search_students(1)
-
-        self.assertIsInstance(response, tuple)
-
-        self.assertIsInstance(response[0], list)
-        self.assertEqual(len(response[0]), 0)
-
-        self.assertIsInstance(response[1], int)
-        self.assertEqual(response[1], 0)
-
-    def test_search_students_no_last_link(self, m):
-        from utils import search_students
-
-        m.register_uri(
-            "GET",
-            "/api/v1/courses/1/search_users",
-            json=[{"id": 1, "name": "John Smith"}],
-        )
-
-        response = search_students(1)
-
-        self.assertIsInstance(response, tuple)
-
-        self.assertIsInstance(response[0], list)
-        self.assertEqual(len(response[0]), 1)
-
-        self.assertIsInstance(response[1], int)
-        self.assertEqual(response[1], 0)
 
     def test_get_user(self, m):
         from utils import get_user

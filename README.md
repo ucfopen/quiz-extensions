@@ -38,8 +38,6 @@ Fill in the config file
 API_URL = ''  # Canvas API URL (e.g. 'http://example.com/api/v1/')
 API_KEY = ''  # Canvas API Key
 
-# The default number of objects the Canvas API will return per page (usually 10)
-DEFAULT_PER_PAGE = 10
 # The maximum amount of objects the Canvas API will return per page (usually 100)
 MAX_PER_PAGE = 100
 
