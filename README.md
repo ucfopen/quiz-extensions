@@ -1,5 +1,5 @@
-[![Build Status](https://travis-ci.org/ucfopen/quiz-extensions.svg?branch=master)](https://travis-ci.org/ucfopen/quiz-extensions)
-[![Coverage Status](https://coveralls.io/repos/github/ucfopen/quiz-extensions/badge.svg)](https://coveralls.io/github/ucfopen/quiz-extensions)
+[![Build Status](https://github.com/ucfopen/quiz-extensions/actions/workflows/run-tests.yml/badge.svg)](https://github.com/ucfopen/quiz-extensions/actions/workflows/run-tests.yml/)
+[![Coverage Status](https://codecov.io/gh/ucfopen/quiz-extensions/branch/master/graph/badge.svg?token=7MfeVsKdxc)](https://codecov.io/gh/ucfopen/quiz-extensions)
 [![Join UCF Open Slack Discussions](https://ucf-open-slackin.herokuapp.com/badge.svg)](https://ucf-open-slackin.herokuapp.com/)
 
 A self-service LTI for faculty to easily extend time for multiple users for
@@ -7,10 +7,10 @@ all quizzes at once.
 
 # Table of Contents
 
-* [Installation](#installation)
-  * [Development Installation](#development-installation)
-  * [Production Installation](#production-installation)
-* [Third Party Licenses](#third-party-licenses)
+- [Installation](#installation)
+  - [Development Installation](#development-installation)
+  - [Production Installation](#production-installation)
+- [Third Party Licenses](#third-party-licenses)
 
 # Installation
 
@@ -70,13 +70,13 @@ source env/bin/activate
 
 Install required packages
 
-* If you want to be able to run tests:
+- If you want to be able to run tests:
 
   ```sh
   pip install -r test_requirements.txt
   ```
 
-* Otherwise,
+- Otherwise,
 
   ```sh
   pip install -r requirements.txt
