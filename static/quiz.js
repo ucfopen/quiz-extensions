@@ -144,7 +144,7 @@ function clearAlerts() {
 function ajaxFilter(query, callback) {
 	var xhttp = new XMLHttpRequest();
 
-	user_list_div.innerHTML = "<div id=\"user_list\"><p>loading...</p></div>";
+	user_list_div.innerHTML = "<div id=\"user_list\"><p>Loading...</p><p>Please wait.</p></div>";
 
 	xhttp.onreadystatechange = function () {
 		if (xhttp.readyState == 4 && xhttp.status == 200) {
