@@ -5,7 +5,6 @@ import logging
 import math
 from collections import defaultdict
 from logging.config import dictConfig
-from urllib.parse import parse_qs, urlsplit
 
 import requests
 
