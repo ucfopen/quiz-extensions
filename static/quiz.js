@@ -28,14 +28,6 @@ $("#user_list_div").on("click", ".user", function (e) {
 	checkIfEmpty();
 });
 
-$("#user_list_div").on("click", "#prev_user_page_button, #next_user_page_button", function (e) {
-	ajaxFilter(
-		$("#filter_users").val(),
-		$(this).attr("data-page-number"),
-		update_user_list
-	);
-});
-
 $("#selected_user_list").on("click", ".user", function (e) {
 	var selected_user = $(this);
 	$("#user_list").children().each(function (index, user) {
@@ -50,7 +42,7 @@ $("#selected_user_list").on("click", ".user", function (e) {
 $("#filter_users_button").on("click", function (e) {
 	e.preventDefault();
 	var query = $("#filter_users").val()
-	ajaxFilter(query, curr_page_number, update_user_list);
+	ajaxFilter(query, update_user_list);
 });
 
 $("#percent_select").on("change", function (e) {
@@ -149,10 +141,10 @@ function clearAlerts() {
 	}
 }
 
-function ajaxFilter(query, page, callback) {
+function ajaxFilter(query, callback) {
 	var xhttp = new XMLHttpRequest();
 
-	user_list_div.innerHTML = "<div id=\"user_list\"><p>loading...</p></div>";
+	user_list_div.innerHTML = "<div id=\"user_list\"><p>Loading...</p><p>Please wait.</p></div>";
 
 	xhttp.onreadystatechange = function () {
 		if (xhttp.readyState == 4 && xhttp.status == 200) {
@@ -160,7 +152,7 @@ function ajaxFilter(query, page, callback) {
 		}
 	};
 	xhttp.onload = callback;
-	xhttp.open("GET", filter_url + "?query=" + query + "&page=" + page, true);
+	xhttp.open("GET", filter_url + "?query=" + query, true);
 	xhttp.send();
 }
 
@@ -446,7 +438,7 @@ function ajax_check_missing_and_stale_quizzes(course_id) {
 
 function load_func() {
 	// load initial user list
-	ajaxFilter("", 1, update_user_list);
+	ajaxFilter("", update_user_list);
 
 	// check for missing quizzes
 	ajax_check_missing_and_stale_quizzes(course_id);

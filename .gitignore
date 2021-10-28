@@ -8,3 +8,4 @@ config.py
 /env*
 /htmlcov
 /logs
+dump.rdb
