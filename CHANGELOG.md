@@ -2,9 +2,25 @@
 
 ## [Unreleased]
 
+## [5.0.0] - 2021-10-31
+
 ### General
 
 - Added ability to give extensions to users in the `"invited"` enrollment state.
+- Changed student list from loading 10 at at time with pagination to loading all with scrolling.
+- Renamed "filter" to "search"
+- Change config template to use `"staff"` rather than `"admin"` and `"student"`.
+
+### Bugfixes
+
+- Fixed an issue where a change to headers in the ["Get users in a course" endpoint of the Canvas API](https://canvas.instructure.com/doc/api/courses.html#method.courses.users) caused students to be displayed only if there were 10 or fewer in the course.
+
+### Backstage
+
+- Switched from Travis CI to GitHub Actions
+- Switched from Coveralls to Codecov
+- Added CanvasAPI for some API calls
+- Added test for accessing from a bad domain
 
 ## [4.0.0] - 2020-03-31
 
@@ -66,7 +82,8 @@
 
 - Initial release
 
-[Unreleased]: https://github.com/ucfopen/quiz-extensions/compare/v4.0.0...master
+[Unreleased]: https://github.com/ucfopen/quiz-extensions/compare/v5.0.0...master
+[5.0.0]: https://github.com/ucfopen/quiz-extensions/compare/v4.0.0...v5.0.0
 [4.0.0]: https://github.com/ucfopen/quiz-extensions/compare/v3.1.1...v4.0.0
 [3.1.1]: https://github.com/ucfopen/quiz-extensions/compare/v3.1.0...v3.1.1
 [3.1.0]: https://github.com/ucfopen/quiz-extensions/compare/v3.0.0...v3.1.0
