@@ -9,8 +9,6 @@ API_KEY = "CHANGEME"
 # (e.g. ['example.com', 'example.edu'])
 ALLOWED_CANVAS_DOMAINS = ["example.edu"]
 
-# The default number of objects the Canvas API will return per page (usually 10)
-DEFAULT_PER_PAGE = 10
 # The maximum amount of objects the Canvas API will return per page (usually 100)
 MAX_PER_PAGE = 100
 
@@ -72,9 +70,13 @@ PYLTI_CONFIG = {
     },
     "roles": {
         # Maps values sent in the lti launch value of "roles" to a group
-        # Allows you to check LTI.is_role('admin') for your user
-        "admin": ["Administrator", "urn:lti:instrole:ims/lis/Administrator"],
-        "student": ["Student", "urn:lti:instrole:ims/lis/Student"],
+        # Allows you to check LTI.is_role('staff') for your user
+        "staff": [
+            "urn:lti:instrole:ims/lis/Administrator",
+            "Instructor",
+            # 'ContentDeveloper',
+            # 'urn:lti:role:ims/lis/TeachingAssistant'
+        ]
     },
 }
 

@@ -9,12 +9,12 @@ var i = 0;
 var update_interval_id = null;
 var refresh_interval_id = null;
 
-$("#user_list_div").on("click", ".user", function(e) {
+$("#user_list_div").on("click", ".user", function (e) {
 	e.preventDefault();
 
 	var user_id = $(this).attr("data-user-id")
 	var is_duplicate = false;
-	$("#selected_user_list").children().each(function(index, selected_user) {
+	$("#selected_user_list").children().each(function (index, selected_user) {
 		if ($(selected_user).attr("data-user-id") == user_id) {
 			is_duplicate = true;
 			return false;
@@ -28,17 +28,9 @@ $("#user_list_div").on("click", ".user", function(e) {
 	checkIfEmpty();
 });
 
-$("#user_list_div").on("click", "#prev_user_page_button, #next_user_page_button", function(e) {
-	ajaxFilter(
-		$("#filter_users").val(),
-		$(this).attr("data-page-number"),
-		update_user_list
-	);
-});
-
-$("#selected_user_list").on("click", ".user", function(e) {
+$("#selected_user_list").on("click", ".user", function (e) {
 	var selected_user = $(this);
-	$("#user_list").children().each(function(index, user) {
+	$("#user_list").children().each(function (index, user) {
 		if ($(user).attr("data-user-id") == selected_user.attr("data-user-id")) {
 			$(user).prop("disabled", false);
 		}
@@ -47,21 +39,21 @@ $("#selected_user_list").on("click", ".user", function(e) {
 	checkIfEmpty();
 });
 
-$("#filter_users_button").on("click", function(e) {
+$("#filter_users_button").on("click", function (e) {
 	e.preventDefault();
 	var query = $("#filter_users").val()
-	ajaxFilter(query, curr_page_number, update_user_list);
+	ajaxFilter(query, update_user_list);
 });
 
-$("#percent_select").on("change", function(e) {
+$("#percent_select").on("change", function (e) {
 	$("#modal_percent_added").html(getPercent());
 });
 
-$("#percent_input").on("input", function(e) {
+$("#percent_input").on("input", function (e) {
 	$("#modal_percent_added").html(getPercent())
 });
 
-$("#apply_now").on("click", function(e) {
+$("#apply_now").on("click", function (e) {
 	$("#percent_form").hide();
 	$(update_status).show();
 	$("#update").hide();
@@ -73,16 +65,16 @@ $("#apply_now").on("click", function(e) {
 		type: "POST",
 		url: refresh_url
 	})
-	.done(function(data) {
-		var refresh_job_url = data["refresh_job_url"];
-		refresh_interval_id = setInterval(checkRefresh, 1000, refresh_job_url, true);
-	})
-	.fail(function(data) {
-		// TODO: handle error case
-	});
+		.done(function (data) {
+			var refresh_job_url = data["refresh_job_url"];
+			refresh_interval_id = setInterval(checkRefresh, 1000, refresh_job_url, true);
+		})
+		.fail(function (data) {
+			// TODO: handle error case
+		});
 });
 
-$("#go_button").on("click", function() {
+$("#go_button").on("click", function () {
 	$("#modal_percent_added").html(getPercent())
 
 	modal_selected_user_list.innerHTML = "";
@@ -96,7 +88,7 @@ $("#go_button").on("click", function() {
 		$("#submit_button").prop("disabled", false);
 	}
 
-	for (i=0; i<num_selected_users; i++) {
+	for (i = 0; i < num_selected_users; i++) {
 		var user_id = selected_user_list.children[i].getAttribute("data-user-id");
 		var user_name = $(selected_user_list.children[i]).text();
 
@@ -108,16 +100,16 @@ $("#go_button").on("click", function() {
 	}
 });
 
-$("#clear_button").on("click", function(e) {
+$("#clear_button").on("click", function (e) {
 	clearSelectedStudents();
 });
 
-$("#submit_button").on("click", function(e) {
+$("#submit_button").on("click", function (e) {
 	$("#submit_button").prop("disabled", true);
 	ajaxSend();
 });
 
-$("#go_modal").on("hidden.bs.modal", function(e) {
+$("#go_modal").on("hidden.bs.modal", function (e) {
 	$("#percent_form").show();
 	$(update_status).hide();
 	$(results_div).hide();
@@ -125,7 +117,7 @@ $("#go_modal").on("hidden.bs.modal", function(e) {
 	resetBars();
 });
 
-$("#results_button").on("click", function(e) {
+$("#results_button").on("click", function (e) {
 	e.preventDefault();
 
 	$("#percent_form").hide();
@@ -144,23 +136,23 @@ function clearSelectedStudents() {
 
 function clearAlerts() {
 	var alerts_div = document.getElementById("alerts");
-	while(alerts_div.children.length > 0) {
+	while (alerts_div.children.length > 0) {
 		alerts_div.removeChild(alerts_div.children[0]);
 	}
 }
 
-function ajaxFilter(query, page, callback) {
+function ajaxFilter(query, callback) {
 	var xhttp = new XMLHttpRequest();
 
-	user_list_div.innerHTML = "<div id=\"user_list\"><p>loading...</p></div>";
+	user_list_div.innerHTML = "<div id=\"user_list\"><p>Loading...</p><p>Please wait.</p></div>";
 
-	xhttp.onreadystatechange = function() {
+	xhttp.onreadystatechange = function () {
 		if (xhttp.readyState == 4 && xhttp.status == 200) {
 			user_list_div.innerHTML = xhttp.responseText;
 		}
 	};
 	xhttp.onload = callback;
-	xhttp.open("GET", filter_url+"?query=" + query + "&page=" + page, true);
+	xhttp.open("GET", filter_url + "?query=" + query, true);
 	xhttp.send();
 }
 
@@ -190,34 +182,34 @@ function ajaxSend() {
 		percent: getPercent()
 	};
 
-	for (i=0; i<selected_users.length; i++) {
+	for (i = 0; i < selected_users.length; i++) {
 		var user_id = selected_users[i].getAttribute("data-user-id");
 		users_percent_obj.user_ids.push(user_id);
 	}
 	$.ajax({
 		type: "POST",
 		url: update_url,
-		headers: {"Content-Type": "application/json"},
+		headers: { "Content-Type": "application/json" },
 		data: JSON.stringify(users_percent_obj)
 	})
-	.done(function(data) {
-		$("#close_button").prop("disabled", true);
-		$("#close_x").hide();
+		.done(function (data) {
+			$("#close_button").prop("disabled", true);
+			$("#close_x").hide();
 
-		var refresh_job_url = data["refresh_job_url"];
-		var update_job_url = data["update_job_url"];
+			var refresh_job_url = data["refresh_job_url"];
+			var update_job_url = data["update_job_url"];
 
-		refresh_interval_id = setInterval(checkRefresh, 1000, refresh_job_url, false);
-		update_interval_id = setInterval(checkUpdate, 1000, update_job_url);
-	})
-	.fail(function(data) {
-		$(update_status).html("<p>Encountered an error. Status "+ data["status"] + "</p>");
-	})
-	.always(function(data) {
-		$("#submit_button").hide();
-		$("#percent_form").hide();
-		$(update_status).show();
-	});
+			refresh_interval_id = setInterval(checkRefresh, 1000, refresh_job_url, false);
+			update_interval_id = setInterval(checkUpdate, 1000, update_job_url);
+		})
+		.fail(function (data) {
+			$(update_status).html("<p>Encountered an error. Status " + data["status"] + "</p>");
+		})
+		.always(function (data) {
+			$("#submit_button").hide();
+			$("#percent_form").hide();
+			$(update_status).show();
+		});
 }
 
 function checkRefresh(refresh_job_url, refresh_only) {
@@ -226,45 +218,45 @@ function checkRefresh(refresh_job_url, refresh_only) {
 		type: "GET",
 		url: refresh_job_url
 	})
-	.done(function(data) {
-		percent = data["percent"];
-		refresh_div.find(".status-perc").html(percent.toString() + "%");
-		var prog_bar = refresh_div.find(".progress-bar");
-		prog_bar.attr("aria-valuenow", percent);
-		prog_bar.attr("style", "width: " + percent.toString() + "%;");
-		prog_bar.find("span").text(percent.toString() + "% Complete");
-		
-		if (data["status"] == "failed") {
+		.done(function (data) {
+			percent = data["percent"];
+			refresh_div.find(".status-perc").html(percent.toString() + "%");
+			var prog_bar = refresh_div.find(".progress-bar");
+			prog_bar.attr("aria-valuenow", percent);
+			prog_bar.attr("style", "width: " + percent.toString() + "%;");
+			prog_bar.find("span").text(percent.toString() + "% Complete");
+
+			if (data["status"] == "failed") {
+				prog_bar.addClass("progress-bar-danger");
+				prog_bar.removeClass("progress-bar-info");
+				clearInterval(refresh_interval_id);
+				clearInterval(update_interval_id);
+				refresh_div.find(".status-msg").attr("style", "color: #f00;");
+			}
+			else if (data["status"] == "complete") {
+				prog_bar.addClass("progress-bar-success");
+				prog_bar.removeClass("progress-bar-info");
+				clearInterval(refresh_interval_id);
+				refresh_div.find(".status-msg").attr("style", "color: #000;");
+
+				if (refresh_only === true) {
+					resetModal();
+				}
+			}
+
+			refresh_div.find(".status-msg").html(data["status_msg"]);
+		})
+		.fail(function (data) {
+			var prog_bar = refresh_div.find(".progress-bar");
+
 			prog_bar.addClass("progress-bar-danger");
 			prog_bar.removeClass("progress-bar-info");
 			clearInterval(refresh_interval_id);
 			clearInterval(update_interval_id);
-			refresh_div.find(".status-msg").attr("style", "color: #f00;");
-		}
-		else if (data["status"] == "complete") {
-			prog_bar.addClass("progress-bar-success");
-			prog_bar.removeClass("progress-bar-info");
-			clearInterval(refresh_interval_id);
-			refresh_div.find(".status-msg").attr("style", "color: #000;");
 
-			if (refresh_only === true) {
-				resetModal();
-			}
-		}
-
-		refresh_div.find(".status-msg").html(data["status_msg"]);
-	})
-	.fail(function(data) {
-		var prog_bar = refresh_div.find(".progress-bar");
-
-		prog_bar.addClass("progress-bar-danger");
-		prog_bar.removeClass("progress-bar-info");
-		clearInterval(refresh_interval_id);
-		clearInterval(update_interval_id);
-
-		refresh_div.find(".status-msg").html("<span style=\"color: #f00;\">Failed</span>");
-		resetModal();
-	});
+			refresh_div.find(".status-msg").html("<span style=\"color: #f00;\">Failed</span>");
+			resetModal();
+		});
 }
 
 function resetModal() {
@@ -282,58 +274,58 @@ function checkUpdate(update_job_url) {
 		type: "GET",
 		url: update_job_url
 	})
-	.done(function(data) {
+		.done(function (data) {
 
-		// If there is no data yet, skip
-		if ($.isEmptyObject(data)) {
-			return;
-		}
+			// If there is no data yet, skip
+			if ($.isEmptyObject(data)) {
+				return;
+			}
 
-		percent = data["percent"];
-		update_div.find(".status-perc").html(percent.toString() + "%");
-		var prog_bar = update_div.find(".progress-bar");
-		prog_bar.attr("aria-valuenow", percent);
-		prog_bar.attr("style", "width: " + percent.toString() + "%;");
-		prog_bar.find("span").text(percent.toString() + "% Complete");
-		update_div.find(".status-msg").html(data["status_msg"]);
+			percent = data["percent"];
+			update_div.find(".status-perc").html(percent.toString() + "%");
+			var prog_bar = update_div.find(".progress-bar");
+			prog_bar.attr("aria-valuenow", percent);
+			prog_bar.attr("style", "width: " + percent.toString() + "%;");
+			prog_bar.find("span").text(percent.toString() + "% Complete");
+			update_div.find(".status-msg").html(data["status_msg"]);
 
-		if (data["status"] == "failed") {
+			if (data["status"] == "failed") {
+				prog_bar.addClass("progress-bar-danger");
+				prog_bar.removeClass("progress-bar-info");
+				clearInterval(update_interval_id);
+				update_div.find(".status-msg").attr("style", "color: #f00;");
+			}
+			else if (data["status"] == "complete") {
+				prog_bar.addClass("progress-bar-success");
+				prog_bar.removeClass("progress-bar-info");
+				clearInterval(update_interval_id);
+				update_div.find(".status-msg").attr("style", "color: #000;");
+
+				updateResultTable(data["status_msg"], data["quiz_list"], data["unchanged_list"]);
+
+				resetModal();
+				$("#results_button").show();
+			}
+		})
+		.fail(function (data) {
+			percent = data["percent"];
+			update_div.find(".status_perc").html(percent.toString() + "%");
+			var prog_bar = update_div.find(".progress-bar");
+			prog_bar.attr("aria-valuenow", percent);
+			prog_bar.attr("style", "width: " + percent.toString() + "%;");
+			prog_bar.find("span").text(percent.toString() + "% Complete");
+			update_div.find(".status-msg").html(data["status_msg"]);
+
 			prog_bar.addClass("progress-bar-danger");
 			prog_bar.removeClass("progress-bar-info");
 			clearInterval(update_interval_id);
-			update_div.find(".status-msg").attr("style", "color: #f00;");
-		}
-		else if (data["status"] == "complete") {
-			prog_bar.addClass("progress-bar-success");
-			prog_bar.removeClass("progress-bar-info");
-			clearInterval(update_interval_id);
-			update_div.find(".status-msg").attr("style", "color: #000;");
-
-			updateResultTable(data["status_msg"], data["quiz_list"], data["unchanged_list"]);
 
 			resetModal();
-			$("#results_button").show();
-		}
-	})
-	.fail(function(data) {
-		percent = data["percent"];
-		update_div.find(".status_perc").html(percent.toString() + "%");
-		var prog_bar = update_div.find(".progress-bar");
-		prog_bar.attr("aria-valuenow", percent);
-		prog_bar.attr("style", "width: " + percent.toString() + "%;");
-		prog_bar.find("span").text(percent.toString() + "% Complete");
-		update_div.find(".status-msg").html(data["status_msg"]);
-
-		prog_bar.addClass("progress-bar-danger");
-		prog_bar.removeClass("progress-bar-info");
-		clearInterval(update_interval_id);
-
-		resetModal();
-	});
+		});
 }
 
 function updateResultTable(message, quiz_list, unchanged_quiz_list) {
-	results_div.innerHTML = "<p>"+ message + "</p>";
+	results_div.innerHTML = "<p>" + message + "</p>";
 	if (quiz_list.length > 0) {
 		results_div.innerHTML += "<h4>Updated</h4>"
 		var table_html = "<div id=\"table_div\"><table class=\"table table-striped table-condensed\"><thead><tr><th scope=\"col\">Quiz Title</th><th scope=\"col\">Minutes Extended</th></tr></thead><tbody>";
@@ -372,7 +364,7 @@ function update_user_list() {
 }
 
 function resetBars() {
-	$("#update, #refresh").each(function() {
+	$("#update, #refresh").each(function () {
 		$(this).show();
 		$(this).find(".status-perc").html("0%");
 		var prog_bar = $(this).find(".progress-bar");
@@ -394,11 +386,11 @@ function disableAlreadySelected() {
 	var users = user_list.children;
 	var selected_users = selected_user_list.children;
 
-	for (i=0; i<selected_users.length; i++) {
+	for (i = 0; i < selected_users.length; i++) {
 		selected_user_ids.push(selected_users[i].getAttribute("data-user-id"));
 	}
 
-	for (i=0; i<users.length; i++) {
+	for (i = 0; i < users.length; i++) {
 		var user_id = users[i].getAttribute("data-user-id");
 		if (selected_user_ids.indexOf(user_id) > -1) {
 			user_list.children[i].setAttribute("disabled", true);
@@ -417,7 +409,7 @@ function checkIfEmpty() {
 	}
 	else {
 		no_matching_warnings = user_list.getElementsByClassName("no-matching");
-		for (i=0; i<no_matching_warnings.length; i++) {
+		for (i = 0; i < no_matching_warnings.length; i++) {
 			user_list.removeChild(no_matching_warnings[i]);
 		}
 	}
@@ -426,7 +418,7 @@ function checkIfEmpty() {
 function ajax_check_missing_and_stale_quizzes(course_id) {
 	var xhttp = new XMLHttpRequest();
 
-	xhttp.onreadystatechange = function() {
+	xhttp.onreadystatechange = function () {
 		if (xhttp.readyState == 4 && xhttp.status == 200) {
 			var response = JSON.parse(xhttp.responseText);
 
@@ -446,7 +438,7 @@ function ajax_check_missing_and_stale_quizzes(course_id) {
 
 function load_func() {
 	// load initial user list
-	ajaxFilter("", 1, update_user_list);
+	ajaxFilter("", update_user_list);
 
 	// check for missing quizzes
 	ajax_check_missing_and_stale_quizzes(course_id);

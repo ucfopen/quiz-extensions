@@ -152,7 +152,7 @@ class ViewTests(flask_testing.TestCase):
             sess["lti_logged_in"] = True
             sess["is_admin"] = True
             sess[LTI_SESSION_KEY] = True
-            sess["roles"] = "Administrator"
+            sess["roles"] = "urn:lti:instrole:ims/lis/Administrator"
 
         course_id = 1
 
@@ -161,7 +161,6 @@ class ViewTests(flask_testing.TestCase):
         self.assert_200(response)
         self.assert_template_used("userselect.html")
         self.assertEqual(self.get_context_variable("course_id"), str(course_id))
-        self.assertEqual(self.get_context_variable("current_page_number"), 1)
 
     def test_update_background_no_json(self, m):
         from views import update_background
@@ -955,38 +954,47 @@ class ViewTests(flask_testing.TestCase):
             sess["roles"] = "Instructor"
             sess[LTI_SESSION_KEY] = True
 
+        m.register_uri(
+            "GET", "/api/v1/courses/1", json={"id": 1, "title": "Example Course"}
+        )
         m.register_uri("GET", "/api/v1/courses/1/search_users", json=[])
 
         course_id = 1
         response = self.client.get("/filter/{}/".format(course_id))
         self.assert_200(response)
         self.assert_template_used("user_list.html")
-        self.assertEqual(len(self.get_context_variable("users")), 0)
-        self.assertEqual(self.get_context_variable("max_pages"), 1)
+        self.assertEqual(len(list(self.get_context_variable("users"))), 0)
 
     def test_filter(self, m):
         with self.client.session_transaction() as sess:
             sess[LTI_SESSION_KEY] = True
             sess["canvas_user_id"] = 1234
             sess["lti_logged_in"] = True
-            sess["roles"] = "Administrator"
+            sess["roles"] = "urn:lti:instrole:ims/lis/Administrator"
             sess["is_admin"] = True
 
+        m.register_uri(
+            "GET", "/api/v1/courses/1", json={"id": 1, "title": "Example Course"}
+        )
         m.register_uri(
             "GET",
             "/api/v1/courses/1/search_users",
             json=[{"id": 1, "name": "John Smith"}, {"id": 2, "name": "Jane Doe"}],
             headers={
-                "Link": '<http://example.com/api/v1/courses/1/search_users?page=99>; rel="last"'
+                "Link": f'<{config.API_URL}courses/1/search_users?page=2&per_page=2>; rel="next"'
             },
+        )
+        m.register_uri(
+            "GET",
+            "/api/v1/courses/1/search_users?page=2",
+            json=[{"id": 3, "name": "Jane Smyth"}, {"id": 4, "name": "Jon Doe"}],
         )
 
         course_id = 1
         response = self.client.get("/filter/{}/".format(course_id))
         self.assert_200(response)
         self.assert_template_used("user_list.html")
-        self.assertEqual(len(self.get_context_variable("users")), 2)
-        self.assertEqual(self.get_context_variable("max_pages"), 99)
+        self.assertEqual(len(list(self.get_context_variable("users"))), 4)
 
     def test_lti_tool_not_admin_or_instructor(self, m):
         with self.client.session_transaction() as sess:
@@ -1029,7 +1037,7 @@ class ViewTests(flask_testing.TestCase):
             "/launch",
             http_method="POST",
             body=payload,
-            roles="Administrator",
+            roles="urn:lti:instrole:ims/lis/Administrator",
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
@@ -1038,6 +1046,33 @@ class ViewTests(flask_testing.TestCase):
         with self.client.session_transaction() as session:
             self.assertRedirects(response, "/quiz/1/")
             self.assertTrue(session.get("is_admin"))
+
+    def test_lti_tool_bad_domain(self, m):
+        payload = {
+            "launch_presentation_return_url": "http://localhost/",
+            "custom_canvas_api_domain": "example.com",
+            "custom_canvas_user_id": "1",
+            "custom_canvas_course_id": "1",
+        }
+
+        signed_url = self.generate_launch_request(
+            "/launch",
+            http_method="POST",
+            body=payload,
+            roles="urn:lti:instrole:ims/lis/Administrator",
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+
+        response = self.client.post(
+            signed_url,
+            data=payload,
+        )
+
+        self.assert_template_used("error.html")
+        self.assertIn(
+            b"This tool is only available from the following domain(s):",
+            response.data,
+        )
 
     @staticmethod
     def generate_launch_request(
@@ -1177,80 +1212,6 @@ class UtilTests(flask_testing.TestCase):
         response = get_quizzes(1)
         self.assertIsInstance(response, list)
         self.assertEqual(len(response), 0)
-
-    def test_search_students(self, m):
-        from utils import search_students
-
-        m.register_uri(
-            "GET",
-            "/api/v1/courses/1/search_users",
-            json=[{"id": 1, "name": "John Smith"}, {"id": 2, "name": "Jane Doe"}],
-            headers={
-                "Link": '<http://example.com/api/v1/courses/1/search_users?page=99>; rel="last"'
-            },
-        )
-
-        response = search_students(1)
-
-        self.assertIsInstance(response, tuple)
-
-        self.assertIsInstance(response[0], list)
-        self.assertEqual(len(response[0]), 2)
-
-        self.assertIsInstance(response[1], int)
-        self.assertEqual(response[1], 99)
-
-    def test_search_students_malformed_response(self, m):
-        from utils import search_students
-
-        m.register_uri("GET", "/api/v1/courses/1/search_users")
-        response = search_students(1)
-
-        self.assertIsInstance(response, tuple)
-
-        self.assertIsInstance(response[0], list)
-        self.assertEqual(len(response[0]), 0)
-
-        self.assertIsInstance(response[1], int)
-        self.assertEqual(response[1], 0)
-
-    def test_search_students_error(self, m):
-        from utils import search_students
-
-        m.register_uri(
-            "GET",
-            "/api/v1/courses/1/search_users",
-            json={"errors": {"message": "An error occurred."}},
-        )
-
-        response = search_students(1)
-
-        self.assertIsInstance(response, tuple)
-
-        self.assertIsInstance(response[0], list)
-        self.assertEqual(len(response[0]), 0)
-
-        self.assertIsInstance(response[1], int)
-        self.assertEqual(response[1], 0)
-
-    def test_search_students_no_last_link(self, m):
-        from utils import search_students
-
-        m.register_uri(
-            "GET",
-            "/api/v1/courses/1/search_users",
-            json=[{"id": 1, "name": "John Smith"}],
-        )
-
-        response = search_students(1)
-
-        self.assertIsInstance(response, tuple)
-
-        self.assertIsInstance(response[0], list)
-        self.assertEqual(len(response[0]), 1)
-
-        self.assertIsInstance(response[1], int)
-        self.assertEqual(response[1], 0)
 
     def test_get_user(self, m):
         from utils import get_user
