@@ -59,15 +59,13 @@ Once you have edited the .env file, you will want to run `docker-compose -f dock
 If you have not created your database yet, you can do so with these commands:
 
 ```sh
-docker-compose exec lti bash
-python
-from views import db, app
-with app.app_context():
-    db.create_all()
-
+docker-compose exec lti flask db upgrade
 ```
 
-## Development Installation
+
+
+
+## Development Installation (Deprecated)
 
 ```sh
 git clone git@github.com:ucfopen/quiz-extensions.git
@@ -165,7 +163,7 @@ Ensure RQ Worker is running. If not, start it with
 rq worker quizext
 ```
 
-## Production Installation
+## Production Installation (Deprecated)
 
 This is for an Ubuntu 16.xx install but should work for other Debian/ubuntu
 based installs using Apache and mod_wsgi.
