@@ -26,9 +26,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r test_requirements.txt
           pip list
-      - name: Create config and log files
+      - name: Create env file
         run: |
           cp .env.template .env
+      - name: Dotenv Action
+        uses: falti/dotenv-action@v0.2.7
       - name: Lint with flake8
         run: flake8
       - name: Check formatting
