@@ -43,9 +43,7 @@ LOGGING_CONFIG = {
             "class": "logging.StreamHandler",
         },
     },
-    "loggers": {
-        "app": {"handlers": ["console"], "level": "DEBUG", "propagate": True}
-    },
+    "loggers": {"app": {"handlers": ["console"], "level": "DEBUG", "propagate": True}},
 }
 
 TESTING_API_URL = "example.edu"  # Used only to run tests
