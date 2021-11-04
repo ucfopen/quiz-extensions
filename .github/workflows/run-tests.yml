@@ -29,8 +29,8 @@ jobs:
       - name: Create env file
         run: |
           cp .env.template .env
-      - name: Dotenv Action
-        uses: falti/dotenv-action@v0.2.7
+      - name: Environment Variables from Dotenv
+        uses: c-py/action-dotenv-to-setenv@v3
       - name: Test env file
         run: |
           env
