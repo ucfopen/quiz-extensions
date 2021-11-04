@@ -39,6 +39,9 @@ jobs:
         uses: bewuethr/mdl-action@v1
       - name: Run tests
         run: docker-compose run lti coverage run -m unittest discover
+      - name: list files
+        run: |
+          ls -lah
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2
         with:
