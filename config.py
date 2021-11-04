@@ -9,8 +9,6 @@ API_KEY = os.environ.get("API_KEY")
 # (e.g. ['example.com', 'example.edu'])
 ALLOWED_CANVAS_DOMAINS = [os.environ.get("ALLOWED_CANVAS_DOMAINS")]
 
-# The default number of objects the Canvas API will return per page (usually 10)
-DEFAULT_PER_PAGE = 10
 # The maximum amount of objects the Canvas API will return per page (usually 100)
 MAX_PER_PAGE = 100
 

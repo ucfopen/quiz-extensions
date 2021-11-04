@@ -8,3 +8,4 @@
 /htmlcov
 /logs
 .env
+dump.rdb

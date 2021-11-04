@@ -15,11 +15,13 @@ services:
       - redis
     ports:
       - "9001:80"
+      - "9002:443"
     env_file:
       - .env
     environment:
       - MODULE_NAME=app
       - FLASK_APP=views.py
+      - FLASK_DEBUG=True
   
   worker:
     build:
