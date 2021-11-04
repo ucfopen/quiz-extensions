@@ -31,6 +31,9 @@ jobs:
           cp .env.template .env
       - name: Dotenv Action
         uses: falti/dotenv-action@v0.2.7
+      - name: Test env file
+        run: |
+          env
       - name: Lint with flake8
         run: flake8
       - name: Check formatting
