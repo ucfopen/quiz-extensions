@@ -62,9 +62,6 @@ If you have not created your database yet, you can do so with these commands:
 docker-compose exec lti flask db upgrade
 ```
 
-
-
-
 ## Development Installation (Deprecated)
 
 ```sh
