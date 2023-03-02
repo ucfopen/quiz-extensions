@@ -206,4 +206,4 @@ under the MIT license.
 
 ## Contact Us
 
-Need help? Have an idea? Just want to say hi? Come join us on the [UCF Open Slack Channel](https://ucf-open-slackin.herokuapp.com) and join the `#quiz-extensions` channel!
+Need help? Have an idea? Just want to say hi? Come join us on the [UCF Open Slack Channel](https://dl.ucf.edu/join-ucfopen) and join the `#quiz-extensions` channel!
