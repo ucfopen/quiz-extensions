@@ -1,7 +1,11 @@
 #!/bin/sh
 
-docker compose run lti coverage run -m unittest discover
-docker compose run lti coverage report
-docker compose run lti coverage html
-docker compose run lti flake8 .
-docker compose run lti black --check . --exclude "env|migrations"
+# Run the commands in a new container
+docker compose run --rm lti sh -c "
+    coverage run -m unittest discover &&
+    coverage report &&
+    coverage html &&
+    flake8 . &&
+    black --check . --exclude 'env|migrations'
+"
+docker compose down

@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+- Dockerize the application
+  - Update the README to include instructions for running the application in a Docker container
+
 ## [5.0.0] - 2021-10-31
 
 ### General
