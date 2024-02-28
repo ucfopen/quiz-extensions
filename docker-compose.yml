@@ -1,4 +1,4 @@
-version: '3.1'
+version: "3.1"
 
 services:
   lti:
@@ -7,36 +7,35 @@ services:
       args:
         - "REQUIREMENTS=${REQUIREMENTS}"
     volumes:
-    - .:/app
-    - $PWD/devops/nginx.conf:/app/nginx.conf
-    - $PWD/devops/uwsgi.ini:/app/uwsgi.ini
+      - .:/app
+      - $PWD/devops/nginx.conf:/app/nginx.conf
+      - $PWD/devops/uwsgi.ini:/app/uwsgi.ini
     depends_on:
       - db
       - redis
     ports:
-      - "9001:80"
-      - "9002:443"
+      - "80:80"
+      - "443:443"
     env_file:
       - .env
     environment:
       - MODULE_NAME=app
       - FLASK_APP=views.py
       - FLASK_DEBUG=True
-  
+
   worker:
     build:
       context: .
       args:
         - "REQUIREMENTS=${REQUIREMENTS}"
     volumes:
-    - .:/app
+      - .:/app
     command: rq worker -c config quizext
     depends_on:
       - db
       - redis
     env_file:
       - .env
-
 
   db:
     image: mariadb

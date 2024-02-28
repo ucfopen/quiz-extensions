@@ -1,4 +1,4 @@
-version: '3.1'
+version: "3.1"
 
 services:
   lti:
@@ -7,27 +7,26 @@ services:
       args:
         - "REQUIREMENTS=${REQUIREMENTS}"
     volumes:
-    - .:/app
-    - $PWD/devops/nginx.conf:/app/nginx.conf
-    - $PWD/devops/uwsgi.ini:/app/uwsgi.ini
+      - .:/app
+      - $PWD/devops/nginx.conf:/app/nginx.conf
+      - $PWD/devops/uwsgi.ini:/app/uwsgi.ini
     ports:
       - "80:80"
     env_file:
       - .env
     environment:
       - MODULE_NAME=app
-  
+
   worker:
     build:
       context: .
       args:
         - "REQUIREMENTS=${REQUIREMENTS}"
     volumes:
-    - .:/app
+      - .:/app
     command: rq worker -c config quizext
     env_file:
       - .env
-
 # There is an expectation that on production you will have your own
 # remote database and redis server setup, rather than using local
 # Docker containers for that functionality.

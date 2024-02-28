@@ -2,9 +2,11 @@ canvasapi==2.2.0
 Flask==2.0.2
 Flask-Migrate==3.1.0
 Flask-SQLAlchemy==2.5.1
+SQLAlchemy==1.4.26
 lxml==4.6.3
 mysqlclient==2.0.3
 git+https://github.com/ucfcdl/pylti.git@roles#egg=PyLTI
 redis==3.5.3
 requests==2.26.0
 rq==1.10.0
+Werkzeug==2.0.2

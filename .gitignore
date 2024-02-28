@@ -9,3 +9,7 @@
 /logs
 .env
 dump.rdb
+
+# ignore docker's copies of these files
+nginx.conf
+uwsgi.ini
