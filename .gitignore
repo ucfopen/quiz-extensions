@@ -3,9 +3,13 @@
 .coverage
 .DS_Store
 .python-version
-config.py
 /venv*
 /env*
 /htmlcov
 /logs
+.env
 dump.rdb
+
+# ignore docker's copies of these files
+nginx.conf
+uwsgi.ini

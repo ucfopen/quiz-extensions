@@ -1,31 +1,31 @@
 import os
 
 # Canvas API URL (e.g. 'http://example.com/api/v1/')
-API_URL = "http://example.com/api/v1/"
+API_URL = os.environ.get("API_URL")
 # Canvas API Key
-API_KEY = "CHANGEME"
+API_KEY = os.environ.get("API_KEY")
 
 # A list of domains that are allowed to use the tool.
 # (e.g. ['example.com', 'example.edu'])
-ALLOWED_CANVAS_DOMAINS = ["example.edu"]
+ALLOWED_CANVAS_DOMAINS = [os.environ.get("ALLOWED_CANVAS_DOMAINS")]
 
 # The maximum amount of objects the Canvas API will return per page (usually 100)
 MAX_PER_PAGE = 100
 
 # A secret key used by Flask for signing. KEEP THIS SECRET!
 # (e.g. 'Ro0ibrkb4Z4bZmz1f5g1+/16K19GH/pa')
-SECRET_KEY = "CHANGEME"
+SECRET_KEY = os.environ.get("SECRET_KEY")
 
-LTI_TOOL_ID = "CHANGEME"  # A unique ID for the tool
+LTI_TOOL_ID = os.environ.get("LTI_TOOL_ID")  # A unique ID for the tool
 
 # URI for database. (e.g. 'mysql://root:root@localhost/quiz_extensions')
-SQLALCHEMY_DATABASE_URI = ""
+SQLALCHEMY_DATABASE_URI = os.environ.get("DB_URI")
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-GOOGLE_ANALYTICS = ""  # The Google Analytics ID to use.
+GOOGLE_ANALYTICS = os.environ.get("GOOGLE_ANALYTICS")  # The Google Analytics ID to use.
 
 # URL for the redis server (e.g. 'redis://localhost:6379')
-REDIS_URL = "redis://localhost:6379"
+REDIS_URL = os.environ.get("REDIS_URL")
 
 LOGGING_CONFIG = {
     "version": 1,
@@ -42,18 +42,8 @@ LOGGING_CONFIG = {
             "formatter": "standard",
             "class": "logging.StreamHandler",
         },
-        "file": {
-            "level": "INFO",
-            "formatter": "standard",
-            "class": "logging.handlers.RotatingFileHandler",
-            "filename": "logs/quiz_ext.log",
-            "maxBytes": 1024 * 1024 * 5,  # 5 MB
-            "backupCount": 5,
-        },
     },
-    "loggers": {
-        "app": {"handlers": ["console", "file"], "level": "DEBUG", "propagate": True}
-    },
+    "loggers": {"app": {"handlers": ["console"], "level": "DEBUG", "propagate": True}},
 }
 
 TESTING_API_URL = "example.edu"  # Used only to run tests

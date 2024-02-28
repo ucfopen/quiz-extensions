@@ -14,7 +14,55 @@ all quizzes at once.
 
 # Installation
 
-## Development Installation
+## Docker
+
+## Development
+
+First you will need to clone the repo, and create the environment file from the template.
+
+```sh
+git clone git@github.com:ucfopen/quiz-extensions.git
+cd quiz-extensions
+cp .env.template .env
+
+```
+
+You will then want to edit the .env environment variables file to match your Canvas domain, api url, and api key.
+
+Quiz Extensions uses Docker Compose to build and start the services:
+
+```sh
+docker compose build
+docker compose up -d
+```
+
+After Docker builds and starts the services, you will run the migration commands to create the database.
+
+```sh
+docker compose exec lti flask db upgrade
+```
+
+Quiz Extensions will now be available via SSL at:
+
+<https://127.0.0.1:9002> and the XML available at <http://127.0.0.1:9002/lti.xml>
+
+or via standard HTTP at:
+
+<http://127.0.0.1:9001> and the XML available at <http://127.0.0.1:9001/lti.xml>
+
+## Production
+
+In a production setting, we expect that there is an external Redis server running as well as a DB server available for Quiz Extensions.
+
+Once you have edited the .env file, you will want to run `docker compose -f docker-compose.production.yml up -d` to bring up the services.
+
+If you have not created your database yet, you can do so with these commands:
+
+```sh
+docker compose exec lti flask db upgrade
+```
+
+## Development Installation (Deprecated)
 
 ```sh
 git clone git@github.com:ucfopen/quiz-extensions.git
@@ -112,7 +160,7 @@ Ensure RQ Worker is running. If not, start it with
 rq worker quizext
 ```
 
-## Production Installation
+## Production Installation (Deprecated)
 
 This is for an Ubuntu 16.xx install but should work for other Debian/ubuntu
 based installs using Apache and mod_wsgi.
