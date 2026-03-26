@@ -1,6 +1,6 @@
 include .env
 
-COMPOSE_FILE=compose.yaml
+COMPOSE_FILE=docker-compose.yml
 DOCKER_COMPOSE=docker compose -f $(COMPOSE_FILE)
 
 BLACK        := $(shell tput -Txterm setaf 0)
