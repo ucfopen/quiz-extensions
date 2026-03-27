@@ -2,12 +2,14 @@ version: "6.0.0"
 
 volumes:
   local_mysql_data: {}
+  static_files: {}
 
 services:
   nginx:
     image: nginx
     volumes:
       - ./devops/nginx.conf:/etc/nginx/nginx.conf:ro
+      - static_files:/app/static:ro
     ports:
       - "80:80"
       - "443:443"
@@ -42,6 +44,7 @@ services:
         - "REQUIREMENTS=${REQUIREMENTS}"
     volumes:
       - ./lti:/app
+      - static_files:/app/static
       - type: bind
         source: ./setup.cfg
         target: /app/setup.cfg
