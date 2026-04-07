@@ -154,11 +154,11 @@ Go to your Canvas instance and log in with your account. Make sure you have admi
 
 Now click on the Admin tab of the ribbon and click the account name where you would like to install your tool. In the navigation menu on the left, select "Developer Keys".
 
-On the "Account" tab, click "+ Developer Key" and select "+ LTI Key". Change the key name, following the syntax: "{Your first name} - Python LTI 1.3 Project". Set the owner email to your work email.
+On the "Account" tab, click "+ Developer Key" and select "+ LTI Key". Change the key name, following the syntax: "{Your first name} - Quiz Extensions". Set the owner email to your work email.
 
-If installing an Instructure-hosted instance of this tool (or one that is otherwise publically accessible), select "Enter URL" and paste the full URL to the LTI Config page. (e.g. https://your-tool-domain/Python LTI 1.3 Project/lticonfig)
+If installing an Instructure-hosted instance of this tool (or one that is otherwise publically accessible), select "Enter URL" and paste the full URL to the LTI Config page. (e.g. https://your-tool-domain/quiz-extensions/lticonfig)
 
-If installing a **self-hosted** instance of this tool, select "Paste JSON" in the method selection menu. Post the JSON from before (e.g. [https://use-your-unique-number-here.ngrok-free.app/Python LTI 1.3 Project/lticonfig](https://ngrok.com) if running locally with ngrok) in the textbox that appears.
+If installing a **self-hosted** instance of this tool, select "Paste JSON" in the method selection menu. Post the JSON from before (e.g. [https://use-your-unique-number-here.ngrok-free.app/quiz-extensions/lticonfig](https://ngrok.com) if running locally with ngrok) in the textbox that appears.
 
 Save the developer key.
 
@@ -224,8 +224,7 @@ make test-all
 ## Acknowledgements:
 
 - 1EdTech's [LTI 1.3 Specification](https://www.imsglobal.org/spec/lti/v1p3)
-- Univeristy of Central Florida's
-  - [Flask LTI 1.3 Template](https://github.com/ucfopen/lti-13-template-flask) and
+- University of Central Florida's
   - [canvasapi](https://github.com/ucfopen/canvasapi)
 - [pylti1.3](https://github.com/dmitry-viskov/pylti1.3)
 

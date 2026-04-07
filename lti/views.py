@@ -70,11 +70,6 @@ register_cli(app)
 # CanvasAPI requires /api/v1/ to be removed
 canvas = Canvas(config.API_URL, config.API_KEY)
 
-json_headers = {
-    "Authorization": "Bearer " + config.API_KEY,
-    "Content-type": "application/json",
-}
-
 ################################
 # START LTI 1.3 IMPLEMENTATION #
 ################################
@@ -414,7 +409,7 @@ def init_views(app):
         job = q.enqueue_call(func=refresh_background, args=(course_id,))
         return Response(
             json.dumps(
-                {"refresh_job_url": url_for("job_status", job_key=job.get_id())}
+                {"refresh_job_url": url_for("job_status", job_key=job.id)}
             ),
             mimetype="application/json",
             status=202,
@@ -441,10 +436,10 @@ def init_views(app):
             json.dumps(
                 {
                     "refresh_job_url": url_for(
-                        "job_status", job_key=refresh_job.get_id()
+                        "job_status", job_key=refresh_job.id
                     ),
                     "update_job_url": url_for(
-                        "job_status", job_key=update_job.get_id()
+                        "job_status", job_key=update_job.id
                     ),
                 }
             ),
@@ -600,7 +595,7 @@ def update_background(course_id, extension_dict):
                 canvas_user = course_obj.get_user(user_id)
                 sortable_name = canvas_user.name
 
-                sis_id = canvas_user.__getattribute__("sis_user_id")
+                sis_id = canvas_user.sis_user_id
 
             except ResourceDoesNotExist:
                 # Unable to find user. Log and skip them.
@@ -661,14 +656,12 @@ def update_background(course_id, extension_dict):
 
             # Add time_limit attribute to quiz
             if is_new:
-                settings = quiz.__getattribute__("quiz_settings")
+                settings = quiz.quiz_settings
                 if settings["has_time_limit"]:
                     # Divide by 60 because Canvas stores new quiz timers in seconds
-                    quiz.__setattr__(
-                        "time_limit", settings["session_time_limit_in_seconds"] / 60
-                    )
+                    quiz.time_limit = settings["session_time_limit_in_seconds"] / 60
                 else:
-                    quiz.__setattr__("time_limit", 0)
+                    quiz.time_limit = 0
 
             quiz_id = quiz.id
             quiz_title = quiz.title
@@ -691,7 +684,7 @@ def update_background(course_id, extension_dict):
                     db.session, Quiz, canvas_id=quiz_id, course_id=course.id
                 )
                 quiz_obj.title = quiz_title
-                quiz_obj.time_limit = quiz.__getattribute__("time_limit")
+                quiz_obj.time_limit = quiz.time_limit
 
                 db.session.commit()
 
@@ -805,9 +798,9 @@ def refresh_background(course_id):
                 # student that previously recieved an extension changes roles.
                 enrolls = list(canvas_user.get_enrollments())
                 type_list = [
-                    e.__getattribute__("type")
+                    e.type
                     for e in enrolls
-                    if e.__getattribute__("enrollment_state") in ("active", "invited")
+                    if e.enrollment_state in ("active", "invited")
                 ]
                 if not any(t == "StudentEnrollment" for t in type_list):
                     logger.info(
@@ -873,7 +866,7 @@ def refresh_background(course_id):
                         db.session, Quiz, canvas_id=quiz_id, course_id=course.id
                     )
                     quiz_obj.title = quiz_title
-                    quiz_obj.time_limit = quiz.__getattribute__("time_limit")
+                    quiz_obj.time_limit = quiz.time_limit
 
                     db.session.commit()
                 else:

@@ -1888,11 +1888,9 @@ class UtilTests(flask_testing.TestCase):
         settings = new_quiz.__getattribute__("quiz_settings")
         if settings["has_time_limit"]:
             # Divide by 60 because Canvas stores new quiz timers in seconds
-            new_quiz.__setattr__(
-                "time_limit", settings["session_time_limit_in_seconds"] / 60
-            )
+            new_quiz.time_limit = settings["session_time_limit_in_seconds"] / 60
         else:
-            new_quiz.__setattr__("time_limit", 0)
+            new_quiz.time_limit = 0
 
         response = extend_quiz(
             quiz=new_quiz,

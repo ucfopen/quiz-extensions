@@ -5,6 +5,7 @@ var missing_alert = document.getElementById("missing_alert");
 var modal_selected_user_list = document.getElementById("modal_selected_user_list");
 var update_status = document.getElementById("update_status");
 var results_div = document.getElementById("results");
+var new_modal = document.getElementById("new_modal");
 var new_banner = document.getElementById("new_banner");
 var i = 0;
 var update_interval_id = null;
@@ -12,7 +13,13 @@ var refresh_interval_id = null;
 
 $("#new_banner").on("closed.bs.alert", function () {
 	document.cookie = "banner_closed=true"
+	new_modal.style.display = "none"
 });
+
+$("#new_modal").on("click", (e) => {
+	document.cookie = "banner_closed=true"
+	new_modal.style.display = "none"
+})
 
 $("#user_list_div").on("click", ".user", function (e) {
 	e.preventDefault();
@@ -448,7 +455,7 @@ function load_func() {
 	
 	// check if the new quiz banner has been closed already
 	if(!document.cookie.split(";").some((item) => item.trim().startsWith("banner_closed="))) {
-		new_banner.style.display = ""
+		new_modal.style.display = ""
 	}
 
 	// load initial user list

@@ -4,11 +4,18 @@
 <h1 class="text-center">Quiz Extensions</h1>
 
 <div id="container" class="container">
-	<div class="alert new_banner alert-dismissible" id="new_banner" role="alert" style="display: none;">
-		<em><b>New!</b></em> Quiz Extensions now has support for the <em>New Quizzes</em> quiz engine.
-		<button type="button" class="close" data-dismiss="alert" aria-label="Close" style="right: 0px;">
-			<span aria-hidden="true">&times;</span>
-		</button>
+	<div id="new_modal" style="display: none;">
+		<div class="alert new_banner alert-dismissible" id="new_banner" role="alert">
+			<button type="button" class="close" data-dismiss="alert" aria-label="Close" style="right: 0px; top: 0px;">
+				<span aria-hidden="true">&times;</span>
+			</button>
+			<h3><em><b>New!</b></em> </h3>
+			<p>
+				Quiz Extensions now has support for the <em>New Quizzes</em> quiz engine.<br/>
+				No additional action is required on your part to apply extensions to future quizzes. 
+				However, you will need to press <strong>Apply Now</strong> in the "newly made quizzes" alert to retroactively apply your extensions to your current New Quizzes.
+			</p>
+		</div>
 	</div>
 	<div id="alerts">
 		<div id="missing_alert" class='alert extend_banner' role='alert' style="display: none;">

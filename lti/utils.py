@@ -14,11 +14,6 @@ from models import Quiz
 dictConfig(config.LOGGING_CONFIG)
 logger = logging.getLogger("app")
 
-headers = {"Authorization": "Bearer " + config.API_KEY}
-json_headers = {
-    "Authorization": "Bearer " + config.API_KEY,
-    "Content-type": "application/json",
-}
 
 
 def extend_quiz(quiz, is_new: bool, percent, user_id_list):
@@ -43,12 +38,10 @@ def extend_quiz(quiz, is_new: bool, percent, user_id_list):
         `None` if there was no time added.
     """
     # Debugging tag for new/classic quiz
-    tag = "Classic"
-    if is_new:
-        tag = "New"
+    tag = "New" if is_new else "Classic"
 
     quiz_id = quiz.id
-    time_limit = quiz.__getattribute__("time_limit")
+    time_limit = getattr(quiz, "time_limit", 0)
 
     if time_limit is None or time_limit < 1:
         msg = tag + " Quiz #{} has no time limit, so there is no time to add."
@@ -145,19 +138,17 @@ def missing_and_stale_quizzes(canvas: Canvas, course_id, quickcheck=False):
 
         # Add time_limit attribute to quiz
         if is_new:
-            settings = canvas_quiz.__getattribute__("quiz_settings")
+            settings = canvas_quiz.quiz_settings
             if settings["has_time_limit"]:
                 # Divide by 60 because Canvas stores new quiz timers in seconds
-                canvas_quiz.__setattr__(
-                    "time_limit", settings["session_time_limit_in_seconds"] / 60
-                )
+                canvas_quiz.time_limit = settings["session_time_limit_in_seconds"] / 60
             else:
-                canvas_quiz.__setattr__("time_limit", 0)
+                canvas_quiz.time_limit = 0
 
         quiz = Quiz.query.filter_by(canvas_id=canvas_quiz.id).first()
 
         # quiz is missing or time limit has changed
-        if not quiz or quiz.time_limit != canvas_quiz.__getattribute__("time_limit"):
+        if not quiz or quiz.time_limit != canvas_quiz.time_limit:
             missing_list.append(canvas_quiz)
 
             if quickcheck:
