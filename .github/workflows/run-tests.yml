@@ -26,9 +26,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-test.txt
           pip list
-      - name: Create config and log files
+      - name: Create log files
         run: |
-          cp config.py.template config.py
           mkdir logs; touch logs/quiz_ext.log
       - name: Lint with flake8
         run: flake8
