@@ -15,7 +15,6 @@ dictConfig(config.LOGGING_CONFIG)
 logger = logging.getLogger("app")
 
 
-
 def extend_quiz(quiz, is_new: bool, percent, user_id_list):
     """
     Extends a quiz time by a percentage for a list of users.
