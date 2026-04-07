@@ -430,9 +430,7 @@ def init_views(app):
         """
         job = q.enqueue_call(func=refresh_background, args=(course_id,))
         return Response(
-            json.dumps(
-                {"refresh_job_url": url_for("job_status", job_key=job.id)}
-            ),
+            json.dumps({"refresh_job_url": url_for("job_status", job_key=job.id)}),
             mimetype="application/json",
             status=202,
         )
@@ -457,12 +455,8 @@ def init_views(app):
         return Response(
             json.dumps(
                 {
-                    "refresh_job_url": url_for(
-                        "job_status", job_key=refresh_job.id
-                    ),
-                    "update_job_url": url_for(
-                        "job_status", job_key=update_job.id
-                    ),
+                    "refresh_job_url": url_for("job_status", job_key=refresh_job.id),
+                    "update_job_url": url_for("job_status", job_key=update_job.id),
                 }
             ),
             mimetype="application/json",

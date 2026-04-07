@@ -1136,7 +1136,7 @@ class ViewTests(flask_testing.TestCase):
         self.worker.work(burst=True)
         self.assertTrue(job.is_finished)
         self.assertEqual(
-            f"{job.return_value()["status_msg"]}",
+            f"{job.return_value()['status_msg']}",
             "No active extensions were found."
             "<br>Extensions for the following students are inactive:<br>Missing User",
         )
