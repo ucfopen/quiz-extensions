@@ -53,12 +53,34 @@ from utils import (
     update_job,
 )
 
+
+class ReverseProxied(object):
+    def __init__(self, app):
+        self.app = app
+
+    def __call__(self, environ, start_response):
+        scheme = environ.get("HTTP_X_FORWARDED_PROTO")
+        # gunicorn 22.0.0 disallows underscores in headers, so we need to
+        # use X-Script-Name to pass the SCRIPT_NAME and set with the app
+        script_name = environ.get("HTTP_X_SCRIPT_NAME", "")
+        if script_name:
+            environ["SCRIPT_NAME"] = script_name
+            path_info = environ["PATH_INFO"]
+            if path_info.startswith(script_name):
+                environ["PATH_INFO"] = path_info[len(script_name) :]
+
+        if scheme:
+            environ["wsgi.url_scheme"] = scheme
+        return self.app(environ, start_response)
+
+
 conn = redis.from_url(config.REDIS_URL)
 q = Queue("quizext", connection=conn)
 
 app = Flask(__name__)
 
 app.config.from_object("config")
+app.wsgi_app = ReverseProxied(app.wsgi_app)
 dictConfig(config.LOGGING_CONFIG)
 logger = logging.getLogger("app")
 cache = Cache(app)
@@ -657,7 +679,7 @@ def update_background(course_id, extension_dict):
             # Add time_limit attribute to quiz
             if is_new:
                 settings = quiz.quiz_settings
-                if settings["has_time_limit"]:
+                if settings is not None and settings["has_time_limit"]:
                     # Divide by 60 because Canvas stores new quiz timers in seconds
                     quiz.time_limit = settings["session_time_limit_in_seconds"] / 60
                 else:

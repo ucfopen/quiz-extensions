@@ -139,7 +139,7 @@ def missing_and_stale_quizzes(canvas: Canvas, course_id, quickcheck=False):
         # Add time_limit attribute to quiz
         if is_new:
             settings = canvas_quiz.quiz_settings
-            if settings["has_time_limit"]:
+            if settings is not None and settings["has_time_limit"]:
                 # Divide by 60 because Canvas stores new quiz timers in seconds
                 canvas_quiz.time_limit = settings["session_time_limit_in_seconds"] / 60
             else:
