@@ -9,9 +9,10 @@ on:
 env:
   REDIS_URL: redis://quiz_redis:6379
   SQLALCHEMY_DATABASE_URI: mysql://quiz_extensions:password@quiz_db:3306/quiz_extensions
-  TESTING_API_URL: test
+  SECRET_KEY: abc123
+  TESTING_API_URL: https://test.com
   TESTING_API_KEY: test
-  API_URL: test
+  API_URL:  https://test.com
   API_KEY: test
 
 jobs:
