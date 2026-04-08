@@ -3,7 +3,7 @@ name: Publish Images
 on:
   workflow_run:
     workflows: ["Run tests"]
-    branches: [master]
+    branches: [master, develop]
     types: 
       - completed
 
