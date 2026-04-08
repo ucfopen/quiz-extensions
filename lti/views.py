@@ -7,11 +7,13 @@ from logging.config import dictConfig
 from subprocess import call
 from urllib.parse import urlparse
 
+import config
 import redis
 import requests
 from canvasapi import Canvas
 from canvasapi.exceptions import CanvasException, ResourceDoesNotExist
 from canvasapi.new_quiz import NewQuiz
+from cli import register_cli
 from flask import (
     Flask,
     Response,
@@ -23,6 +25,14 @@ from flask import (
 )
 from flask_caching import Cache
 from flask_migrate import Migrate
+from models import (
+    Course,
+    Extension,
+    Quiz,
+    Registration,
+    User,
+    db,
+)
 from pylti1p3.contrib.flask import (
     FlaskCacheDataStorage,
     FlaskMessageLaunch,
@@ -35,17 +45,6 @@ from rq import Queue, get_current_job
 from rq.exceptions import NoSuchJobError
 from rq.job import Job
 from sqlalchemy.sql import text
-
-import config
-from cli import register_cli
-from models import (
-    Course,
-    Extension,
-    Quiz,
-    Registration,
-    User,
-    db,
-)
 from utils import (
     extend_quiz,
     get_or_create,
