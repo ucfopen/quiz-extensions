@@ -96,12 +96,10 @@ jobs:
 
       - name: Build Images
         run: |
-          cd docker
           docker compose build --no-cache quiz_extensions
 
       - name: Tag and Push Python Images
         run: |
-          cd docker
           IMAGE_NAME=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "quiz-extensions-quiz_extensions")
           echo "${{ steps.meta_python.outputs.tags }}" | while IFS= read -r tag; do
             [ -n "$tag" ] && docker tag "$IMAGE_NAME" "$tag" && docker push "$tag"
