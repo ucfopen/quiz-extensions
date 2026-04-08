@@ -1,0 +1,71 @@
+volumes:
+  local_mysql_data: {}
+  static_files: {}
+
+services:
+  nginx:
+    image: nginx
+    volumes:
+      - ./devops/nginx.conf:/etc/nginx/nginx.conf:ro
+      - static_files:/app/static:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - quiz_extensions
+  quiz_db:
+    image: mysql:8.2.0
+    platform: linux/amd64
+    volumes:
+      - local_mysql_data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: docker
+      MYSQL_DATABASE: quiz_extensions
+      MYSQL_USER: quiz_extensions
+      MYSQL_PASSWORD: password
+    ports:
+      - 3306:3306
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 3s
+      retries: 5
+      timeout: 10s
+  quiz_redis:
+    image: redis
+    ports:
+      - 6379:6379
+  quiz_extensions:
+    platform: linux/amd64
+    build:
+      context: .
+      args:
+        - "REQUIREMENTS=${REQUIREMENTS}"
+    volumes:
+      - ./lti:/app
+      - static_files:/app/static
+      - type: bind
+        source: ./setup.cfg
+        target: /app/setup.cfg
+      - type: bind
+        source: ./pyproject.toml
+        target: /app/pyproject.toml
+      - type: bind
+        source: ./devops/gunicorn_conf.py
+        target: /app/gunicorn_conf.py
+      - type: bind
+        source: ./devops/prestart.sh
+        target: /app/prestart.sh
+      - ./logs:/app/logs
+    env_file:
+      - .env
+    environment:
+      - MODULE_NAME=app
+      - FLASK_APP=views.py
+    ports:
+      - "8000:8000"
+    depends_on:
+      quiz_db:
+        condition: service_healthy
+        restart: true
+      quiz_redis:
+        condition: service_started
