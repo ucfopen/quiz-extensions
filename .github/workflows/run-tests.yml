@@ -90,7 +90,6 @@ jobs:
 
       - name: Create .env to satisfy build requirements
         run: |
-          cd docker
           if [ ! -f .env ]; then
             touch .env
           fi
