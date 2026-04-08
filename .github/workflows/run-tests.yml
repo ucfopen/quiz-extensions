@@ -39,7 +39,7 @@ jobs:
       #   uses: bewuethr/mdl-action@v1
       - name: Run tests
         run: |
-          coverage run -m unittest discover
+          coverage run -m unittest discover -s lti
           coverage report
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
