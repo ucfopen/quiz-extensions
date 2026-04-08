@@ -1239,7 +1239,7 @@ class ViewTests(flask_testing.TestCase):
         self.worker.work(burst=True)
         self.assertTrue(job.is_finished)
         self.assertEqual(
-            f"{job.return_value()["status_msg"]}",
+            f"{job.return_value()['status_msg']}",
             "No active extensions were found."
             "<br>Extensions for the following students are inactive:<br>Missing User",
         )
@@ -2085,7 +2085,7 @@ class UtilTests(flask_testing.TestCase):
 
         m.register_uri(
             "GET",
-            f"{self.app.config["TESTING_API_URL"]}api/v1/courses/1/quizzes",
+            f"{self.app.config['TESTING_API_URL']}api/v1/courses/1/quizzes",
             json=[
                 {"id": 1, "title": "Quiz 1", "time_limit": None},
                 {"id": 2, "title": "Quiz 2", "time_limit": None},
@@ -2114,7 +2114,7 @@ class UtilTests(flask_testing.TestCase):
 
         m.register_uri(
             "GET",
-            f"{self.app.config["TESTING_API_URL"]}api/v1/courses/1/quizzes",
+            f"{self.app.config['TESTING_API_URL']}api/v1/courses/1/quizzes",
             json=[],
         )
 
@@ -2180,7 +2180,7 @@ class UtilTests(flask_testing.TestCase):
 
         m.register_uri(
             "GET",
-            f"{self.app.config["TESTING_API_URL"]}api/v1/courses/1/quizzes",
+            f"{self.app.config['TESTING_API_URL']}api/v1/courses/1/quizzes",
             json=[{"id": 1, "title": "Quiz 1", "time_limit": None}],
         )
 
@@ -2211,7 +2211,7 @@ class UtilTests(flask_testing.TestCase):
 
         m.register_uri(
             "GET",
-            f"{self.app.config["TESTING_API_URL"]}api/v1/courses/1/quizzes",
+            f"{self.app.config['TESTING_API_URL']}api/v1/courses/1/quizzes",
             json=[
                 {"id": 1, "title": "Quiz 1", "time_limit": 60},  # remains 60
                 {"id": 2, "title": "Quiz 2", "time_limit": 120},  # updated to 120
@@ -2250,7 +2250,7 @@ class UtilTests(flask_testing.TestCase):
 
         m.register_uri(
             "GET",
-            f"{self.app.config["TESTING_API_URL"]}api/v1/courses/1/quizzes",
+            f"{self.app.config['TESTING_API_URL']}api/v1/courses/1/quizzes",
             json=[
                 {"id": 1, "title": "Quiz 1", "time_limit": None},
                 {"id": 2, "title": "Quiz 2", "time_limit": None},
@@ -2286,7 +2286,7 @@ class UtilTests(flask_testing.TestCase):
 
         m.register_uri(
             "GET",
-            f"{self.app.config["TESTING_API_URL"]}api/v1/courses/1/quizzes",
+            f"{self.app.config['TESTING_API_URL']}api/v1/courses/1/quizzes",
             json=[
                 {"id": 1, "title": "Quiz 1", "time_limit": None},
                 {"id": 2, "title": "Quiz 2", "time_limit": None},
