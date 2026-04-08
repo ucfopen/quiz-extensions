@@ -14,7 +14,6 @@ env:
   TESTING_API_KEY: test
   API_URL:  https://test.com
   API_KEY: test
-  REQUIREMENTS: requirements-test.txt
 
 jobs:
   build:
@@ -59,7 +58,6 @@ jobs:
 
   build_and_upload_images:
     needs: build
-    # if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
       contents: write
