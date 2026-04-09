@@ -13,7 +13,7 @@ env:
 jobs:
   build_and_upload_images:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'}}
     permissions:
       contents: write
       packages: write
@@ -25,7 +25,7 @@ jobs:
         id: meta_python
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}/quiz_extensions
+          images: ghcr.io/${{ github.repository_owner }}/quiz-extensions
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
