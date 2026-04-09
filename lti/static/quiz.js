@@ -244,6 +244,9 @@ function checkRefresh(refresh_job_url, refresh_only) {
 				clearInterval(refresh_interval_id);
 				clearInterval(update_interval_id);
 				refresh_div.find(".status-msg").attr("style", "color: #f00;");
+
+				$("#close_button").prop("disabled", false);
+				$("#close_x").show();
 			}
 			else if (data["status"] == "complete") {
 				prog_bar.addClass("progress-bar-success");
@@ -306,6 +309,9 @@ function checkUpdate(update_job_url) {
 				prog_bar.removeClass("progress-bar-info");
 				clearInterval(update_interval_id);
 				update_div.find(".status-msg").attr("style", "color: #f00;");
+
+				$("#close_button").prop("disabled", false);
+				$("#close_x").show();
 			}
 			else if (data["status"] == "complete") {
 				prog_bar.addClass("progress-bar-success");
