@@ -4,7 +4,7 @@ on:
   workflow_run:
     workflows: ["Run tests"]
     branches: [master, develop]
-    types: 
+    types:
       - completed
 
 env:
@@ -12,7 +12,6 @@ env:
 
 jobs:
   build_and_upload_images:
-    needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
