@@ -8,7 +8,7 @@
   - You will need to redeploy this tool using LTI 1.3 to access the new features. Instructions to do this are in the README.
 - *New Quizzes* can now be processed by Quiz Extensions.
 - Updated the README to address the deployment method overhaul.
-- Tidied interface a bit, including a banner indicating to faculty that New Quiz support is avaliable.
+- Tidied interface a bit, including a modal indicating to faculty that New Quiz support is avaliable.
 
 ### Bugfixes
 
