@@ -13,7 +13,7 @@ env:
 jobs:
   build_and_upload_images:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'}}
     permissions:
       contents: write
       packages: write
