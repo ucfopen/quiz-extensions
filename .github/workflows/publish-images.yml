@@ -25,7 +25,7 @@ jobs:
         id: meta_python
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}/quiz_extensions
+          images: ghcr.io/${{ github.repository_owner }}/quiz-extensions
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
