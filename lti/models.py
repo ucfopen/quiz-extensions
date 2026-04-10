@@ -83,3 +83,46 @@ class Quiz(db.Model):
         self.course_id = course_id
         self.title = title
         self.time_limit = time_limit
+
+
+# ============================================
+# LTI 1.3 Models
+# ============================================
+
+
+class Key(db.Model):
+    __tablename__ = "key"
+    id = db.Column(db.Integer, primary_key=True)
+    key_set_id = db.Column(db.Integer, db.ForeignKey("key_set.id"), nullable=False)
+    public_key = db.Column(db.Text, nullable=False)
+    private_key = db.Column(db.Text, nullable=False)
+    alg = db.Column(db.Text, nullable=False)  # defaults to RS256
+
+
+class KeySet(db.Model):
+    __tablename__ = "key_set"
+    id = db.Column(db.Integer, primary_key=True)
+    registrations = db.relationship("Registration", backref="key_set", lazy=True)
+    keys = db.relationship("Key", backref="key_set", lazy=True)
+
+
+class Registration(db.Model):
+    __tablename__ = "registration"
+    id = db.Column(db.Integer, primary_key=True)
+    issuer = db.Column(db.String(255), nullable=False)
+    client_id = db.Column(db.String(255), nullable=False)
+    platform_login_auth_endpoint = db.Column(db.String(255), nullable=False)
+    platform_service_auth_endpoint = db.Column(db.String(255), nullable=False)
+    platform_jwks_endpoint = db.Column(db.String(255), nullable=False)
+    key_set_id = db.Column(db.Integer, db.ForeignKey("key_set.id"), nullable=False)
+    deployments = db.relationship("Deployment", backref="registration", lazy=True)
+    __table_args__ = (db.UniqueConstraint("issuer", "client_id"),)
+
+
+class Deployment(db.Model):
+    __tablename__ = "deployment"
+    id = db.Column(db.Integer, primary_key=True)
+    deployment_id = db.Column(db.String(255), nullable=False)
+    registration_id = db.Column(
+        db.Integer, db.ForeignKey("registration.id"), nullable=False
+    )

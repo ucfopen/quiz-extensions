@@ -1,0 +1,32 @@
+{
+  "title": "Quiz Extensions",
+  "scopes": [],
+  "extensions": [
+    {
+      "platform": "canvas.instructure.com",
+      "settings": {
+        "platform": "canvas.instructure.com",
+        "placements": [
+          {
+            "placement": "course_navigation",
+            "visibility": "admins",
+            "default": "disabled",
+            "message_type": "LtiResourceLinkRequest",
+            "target_link_uri": "{{ url_for('launch', _external=True, _scheme=url_scheme) }}"
+          }
+        ]
+      },
+      "domain": "https://{{ domain }}",
+      "tool_id": "Quiz Extensions",
+      "privacy_level": "public"
+    }
+  ],
+  "description": "A self-service LTI for faculty to easily extend time for multiple users for all quizzes at once.",
+  "custom_fields": {
+    "canvas_user_id": "$Canvas.user.id",
+    "canvas_course_id": "$Canvas.course.id"
+  },
+  "public_jwk_url": "{{ url_for('get_jwks', _external=True, _scheme=url_scheme) }}",
+  "target_link_uri": "{{ url_for('launch', _external=True, _scheme=url_scheme) }}",
+  "oidc_initiation_url": "{{ url_for('login', _external=True, _scheme=url_scheme) }}"
+}

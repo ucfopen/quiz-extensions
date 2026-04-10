@@ -1,9 +1,0 @@
-<div id="user_list" class="btn-group-vertical">
-	{% for user in users %}
-	<button class="user btn btn-default" data-user-id="{{ user.id }}">
-		<span class="pull-left">{{ user.sortable_name}}</span>
-		<span class="pull-right">{{ user.sis_user_id }}</span>
-	</button>
-	{% endfor %}
-</div>
-<div class="text-center text-muted" style="font-size:.75em">Scroll to see more users</div>

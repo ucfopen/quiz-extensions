@@ -3,9 +3,16 @@
 .coverage
 .DS_Store
 .python-version
-config.py
 /venv*
 /env*
 /htmlcov
 /logs
 dump.rdb
+*.venv
+*.env
+lti/nginx.conf
+lti/setup.cfg
+lti/pyproject.toml
+lti/prestart.sh
+lti/gunicorn_conf.py
+lti/logs

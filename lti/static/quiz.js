@@ -5,9 +5,21 @@ var missing_alert = document.getElementById("missing_alert");
 var modal_selected_user_list = document.getElementById("modal_selected_user_list");
 var update_status = document.getElementById("update_status");
 var results_div = document.getElementById("results");
+var new_modal = document.getElementById("new_modal");
+var new_banner = document.getElementById("new_banner");
 var i = 0;
 var update_interval_id = null;
 var refresh_interval_id = null;
+
+$("#new_banner").on("closed.bs.alert", function () {
+	document.cookie = "banner_closed=true"
+	new_modal.style.display = "none"
+});
+
+$("#new_modal").on("click", (e) => {
+	document.cookie = "banner_closed=true"
+	new_modal.style.display = "none"
+})
 
 $("#user_list_div").on("click", ".user", function (e) {
 	e.preventDefault();
@@ -144,7 +156,7 @@ function clearAlerts() {
 function ajaxFilter(query, callback) {
 	var xhttp = new XMLHttpRequest();
 
-	user_list_div.innerHTML = "<div id=\"user_list\"><p>Loading...</p><p>Please wait.</p></div>";
+	user_list_div.innerHTML = "<div id=\"user_list\"><h5 id=\"loader\">Loading...</h5></div>";
 
 	xhttp.onreadystatechange = function () {
 		if (xhttp.readyState == 4 && xhttp.status == 200) {
@@ -232,6 +244,9 @@ function checkRefresh(refresh_job_url, refresh_only) {
 				clearInterval(refresh_interval_id);
 				clearInterval(update_interval_id);
 				refresh_div.find(".status-msg").attr("style", "color: #f00;");
+
+				$("#close_button").prop("disabled", false);
+				$("#close_x").show();
 			}
 			else if (data["status"] == "complete") {
 				prog_bar.addClass("progress-bar-success");
@@ -294,6 +309,9 @@ function checkUpdate(update_job_url) {
 				prog_bar.removeClass("progress-bar-info");
 				clearInterval(update_interval_id);
 				update_div.find(".status-msg").attr("style", "color: #f00;");
+
+				$("#close_button").prop("disabled", false);
+				$("#close_x").show();
 			}
 			else if (data["status"] == "complete") {
 				prog_bar.addClass("progress-bar-success");
@@ -400,9 +418,12 @@ function disableAlreadySelected() {
 
 function checkIfEmpty() {
 	var user_list_children = user_list.getElementsByClassName("user");
+	var loader = document.getElementById("loader")
 
 	if (user_list_children.length <= 0) {
-		var p = document.createElement("p");
+		if (loader) document.removeChild(loader)
+
+		var p = document.createElement("h5");
 		p.className = "no-matching";
 		p.innerHTML = "No matching students found.";
 		user_list.appendChild(p);
@@ -437,6 +458,12 @@ function ajax_check_missing_and_stale_quizzes(course_id) {
 }
 
 function load_func() {
+	
+	// check if the new quiz banner has been closed already
+	if(!document.cookie.split(";").some((item) => item.trim().startsWith("banner_closed="))) {
+		new_modal.style.display = ""
+	}
+
 	// load initial user list
 	ajaxFilter("", update_user_list);
 

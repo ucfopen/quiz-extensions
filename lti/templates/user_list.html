@@ -1,0 +1,14 @@
+<div id="user_list" class="btn-group-vertical" style="position: relative;">
+	{% if users|list | length >= 10 %}
+	<div class="scroll_info_div">
+		<div class="text-center text-muted scroll_info" style="font-size:.75em">▼ Scroll for more</div>
+	</div>
+	{% endif %}
+	{% for user in users %}
+	<button class="user btn btn-default" data-user-id="{{ user.id }}">
+		<span class="pull-left">{{ user.sortable_name}}</span>
+		<span class="pull-right">{{ user.sis_user_id }}</span>
+	</button>
+	{% endfor %}
+	
+</div>
