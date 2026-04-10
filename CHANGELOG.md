@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [6.0.0] - 2026-04-10
+
 ### General
 
 - Quiz Extensions is now using the LTI 1.3 protocol.
@@ -104,7 +106,8 @@
 
 - Initial release
 
-[Unreleased]: https://github.com/ucfopen/quiz-extensions/compare/v5.0.0...master
+[Unreleased]: https://github.com/ucfopen/quiz-extensions/compare/v6.0.0...master
+[6.0.0]: https://github.com/ucfopen/quiz-extensions/compare/v5.0.0...v6.0.0
 [5.0.0]: https://github.com/ucfopen/quiz-extensions/compare/v4.0.0...v5.0.0
 [4.0.0]: https://github.com/ucfopen/quiz-extensions/compare/v3.1.1...v4.0.0
 [3.1.1]: https://github.com/ucfopen/quiz-extensions/compare/v3.1.0...v3.1.1
