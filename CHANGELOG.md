@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### General
+
+- Add basic analytics for tracking tool launches
+
+### Bugfixes
+
+- Trigger Github Actions image push to GHCR on new release tags
+
 ## [6.0.0] - 2026-04-10
 
 ### General

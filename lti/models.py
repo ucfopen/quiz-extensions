@@ -85,6 +85,16 @@ class Quiz(db.Model):
         self.time_limit = time_limit
 
 
+class LaunchLog(db.Model):
+    __tablename__ = "launch_log"
+    id = db.Column(db.Integer, primary_key=True)
+    launch_id = db.Column(db.String(255), nullable=False, index=True)
+    canvas_course_id = db.Column(db.String(255))
+    canvas_course_name = db.Column(db.String(255))
+    user_role = db.Column(db.String(50), nullable=False)
+    launched_at = db.Column(db.DateTime, nullable=False, default=db.func.now())
+
+
 # ============================================
 # LTI 1.3 Models
 # ============================================
