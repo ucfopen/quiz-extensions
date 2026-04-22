@@ -1,14 +1,12 @@
 name: Publish Images
 
 on:
-  workflow_run:
-    workflows: ["Run tests"]
-    branches: [master]
-    types:
-      - completed
+  push:
+    tags:
+      - "v*"
 
 env:
-  REQUIREMENTS: requirements-test.txt
+  REQUIREMENTS: requirements.txt
 
 jobs:
   build_and_upload_images:
