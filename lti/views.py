@@ -29,11 +29,11 @@ from flask_migrate import Migrate
 from models import (
     Course,
     Extension,
+    LaunchLog,
     Quiz,
     Registration,
     User,
     db,
-    LaunchLog,
 )
 from pylti1p3.contrib.flask import (
     FlaskCacheDataStorage,
