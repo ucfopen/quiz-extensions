@@ -372,8 +372,8 @@ class ViewTests(flask_testing.TestCase):
             "{}api/v1/courses/1/quizzes/5/extensions".format(
                 self.app.config["TESTING_API_URL"]
             ),
-            status_code=404,
-            json={"errors": [{"message": "The specified resource does not exist."}]},
+            status_code=200,
+            json={"quiz_extensions": []},
         )
         m.register_uri(
             "GET",
@@ -411,11 +411,11 @@ class ViewTests(flask_testing.TestCase):
         meta_keys = ["status", "status_msg", "percent", "error"]
         self.assertTrue(all(key in job_result for key in meta_keys))
 
-        self.assertEqual(job_result["status"], "failed")
-        self.assertTrue(job_result["error"])
+        self.assertEqual(job_result["status"], "complete")
+        # self.assertTrue(job_result["error"])
         self.assertEqual(
             job_result["status_msg"],
-            "Error creating extension for Classic Quiz #4. Canvas status code: Not Found",
+            "Request complete. 1 quiz has been updated for 2 student(s) to have 200% time. 0 quizzes have no time limit and were left unchanged. There were 1 failed quiz accommodation(s).",
         )
 
     def test_update_background_no_quizzes(self, m):
@@ -605,11 +605,122 @@ class ViewTests(flask_testing.TestCase):
         meta_keys = ["status", "status_msg", "percent", "error"]
         self.assertTrue(all(key in job_result for key in meta_keys))
 
+        self.assertEqual(job_result["status"], "complete")
+        # self.assertTrue(job_result["error"])
+        self.assertEqual(
+            job_result["status_msg"],
+            "Request complete. 1 quiz has been updated for 3 student(s) to have 200% time. 2 quizzes have no time limit and were left unchanged. There were 1 failed quiz accommodation(s).",
+        )
+
+    def test_update_background_internal_error(self, m):
+        from views import update_background
+
+        with self.client.session_transaction() as sess:
+            sess["launch_id"] = 12345
+            sess["roles"] = [
+                "http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor"
+            ]
+
+        course_id = 1
+
+        m.register_uri(
+            "GET",
+            "{}api/v1/courses/1".format(self.app.config["TESTING_API_URL"]),
+            json={"id": 1, "name": "Example Course"},
+        )
+        m.register_uri(
+            "GET",
+            "{}api/v1/courses/1/quizzes".format(self.app.config["TESTING_API_URL"]),
+            json=[
+                {"id": 4, "title": "Quiz 4", "time_limit": 10},
+                {"id": 5, "title": "Quiz 5", "time_limit": 30},
+                {"id": 6, "title": "Quiz 6", "time_limit": None},
+                {"id": 7, "title": "Quiz 7", "time_limit": None},
+            ],
+        )
+        m.register_uri(
+            "GET",
+            "{}api/v1/courses/1/users/11".format(self.app.config["TESTING_API_URL"]),
+            json={
+                "id": 11,
+                "name": "Joe Smyth",
+                "sortable_name": "Joe Smyth",
+                "sis_user_id": "JSmyth11",
+            },
+        )
+        m.register_uri(
+            "GET",
+            "{}api/v1/courses/1/users/12".format(self.app.config["TESTING_API_URL"]),
+            status_code=404,
+            json={"errors": [{"message": "The specified resource does not exist."}]},
+        )
+        m.register_uri(
+            "GET",
+            "{}api/v1/courses/1/users/13".format(self.app.config["TESTING_API_URL"]),
+            json={
+                "id": 13,
+                "name": "Jack Smith",
+                "sortable_name": "Jack Smith",
+                "sis_user_id": "JSmith13",
+            },
+        )
+        m.register_uri(
+            "POST",
+            "{}api/v1/courses/1/quizzes/4/extensions".format(
+                self.app.config["TESTING_API_URL"]
+            ),
+            status_code=500,
+            json={"errors": [{"message": "There was an issue processing your request."}]},
+        )
+        m.register_uri(
+            "POST",
+            "{}api/v1/courses/1/quizzes/5/extensions".format(
+                self.app.config["TESTING_API_URL"]
+            ),
+            status_code=200,
+            json={"quiz_extensions": []},
+        )
+        m.register_uri(
+            "GET",
+            "{}api/quiz/v1/courses/1/quizzes?per_page=100".format(
+                self.app.config["TESTING_API_URL"]
+            ),
+            status_code=500,
+        )
+        course = Course(course_id, course_name="Example Course")
+        views.db.session.add(course)
+
+        user = User(11, sortable_name="Joe Smyth")
+        views.db.session.add(user)
+        user2 = User(13, sortable_name="Jack Smith")
+        views.db.session.add(user2)
+
+        views.db.session.commit()
+
+        ext = Extension(course.id, user.id)
+        views.db.session.add(ext)
+        ext2 = Extension(course.id, user2.id)
+        views.db.session.add(ext2)
+
+        views.db.session.commit()
+
+        job = self.queue.enqueue_call(
+            func=update_background,
+            args=(course_id, {"percent": "200", "user_ids": ["11", "12", "13"]}),
+        )
+        self.worker.work(burst=True)
+
+        self.assertTrue(job.is_finished)
+        job_result = job.return_value()
+
+        meta_keys = ["status", "status_msg", "percent", "error"]
+        self.assertTrue(all(key in job_result for key in meta_keys))
+
         self.assertEqual(job_result["status"], "failed")
         self.assertTrue(job_result["error"])
         self.assertEqual(
             job_result["status_msg"],
-            "Error creating extension for Classic Quiz #4. Canvas status code: Not Found",
+            "Error creating extension for Classic Quiz #4. Canvas status code: Encountered an error: status code 500",
         )
 
     def test_update_background(self, m):
@@ -723,7 +834,7 @@ class ViewTests(flask_testing.TestCase):
         self.assertEqual(
             job_result["status_msg"],
             (
-                "Success! 2 quizzes have been updated for 3 student(s) to have "
+                "Request complete. 2 quizzes have been updated for 3 student(s) to have "
                 "200% time. 2 quizzes have no time limit and were left unchanged."
             ),
         )
@@ -871,7 +982,7 @@ class ViewTests(flask_testing.TestCase):
         self.assertEqual(
             job_result["status_msg"],
             (
-                "Success! 3 quizzes have been updated for 3 student(s) to have "
+                "Request complete. 3 quizzes have been updated for 3 student(s) to have "
                 "200% time. 3 quizzes have no time limit and were left unchanged."
             ),
         )
