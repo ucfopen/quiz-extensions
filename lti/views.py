@@ -651,6 +651,7 @@ def update_background(course_id, extension_dict):
 
         quiz_time_list = []
         unchanged_quiz_time_list = []
+        failure_quiz_time_list = []
 
         if total_quizzes < 1:
             update_job(
@@ -710,6 +711,8 @@ def update_background(course_id, extension_dict):
                     )
                 else:
                     unchanged_quiz_time_list.append({"title": quiz_title})
+            elif extension_response.get("message", "") == "Not Found":
+                failure_quiz_time_list.append({"title": quiz_title})
             else:
                 update_job(
                     job,
@@ -738,6 +741,7 @@ def update_background(course_id, extension_dict):
         update_job(job, 100, message, "complete", error=False)
         job.meta["quiz_list"] = quiz_time_list
         job.meta["unchanged_list"] = unchanged_quiz_time_list
+        job.meta["failure_list"] = failure_quiz_time_list
         job.save()
 
         return job.meta
