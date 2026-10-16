@@ -3,6 +3,7 @@ import functools
 import json
 import logging
 from collections import defaultdict
+from datetime import datetime
 from logging.config import dictConfig
 from subprocess import call
 from urllib.parse import urlparse
@@ -28,6 +29,7 @@ from flask_migrate import Migrate
 from models import (
     Course,
     Extension,
+    LaunchLog,
     Quiz,
     Registration,
     User,
@@ -266,18 +268,40 @@ def init_views(app):
             flask_request, tool_conf, launch_data_storage=launch_data_storage
         )
 
-        session["canvas_email"] = message_launch.get_launch_data().get("email")
         session["error"] = False
-        session["roles"] = message_launch.get_launch_data().get(
+        launch_data = message_launch.get_launch_data()
+        session["canvas_email"] = launch_data.get("email")
+        session["roles"] = launch_data.get(
             "https://purl.imsglobal.org/spec/lti/claim/roles"
         )
         session["launch_id"] = message_launch.get_launch_id()
-        session["course_id"] = message_launch.get_launch_data()[
+        session["course_id"] = launch_data[
             "https://purl.imsglobal.org/spec/lti/claim/custom"
         ]["canvas_course_id"]
-        session["canvas_user_id"] = message_launch.get_launch_data()[
+        session["canvas_user_id"] = launch_data[
             "https://purl.imsglobal.org/spec/lti/claim/custom"
         ]["canvas_user_id"]
+
+        context_claim = launch_data.get(
+            "https://purl.imsglobal.org/spec/lti/claim/context", {}
+        )
+        roles = session.get("roles") or []
+        if any("Administrator" in r for r in roles):
+            user_role = "Administrator"
+        elif any("Instructor" in r for r in roles):
+            user_role = "Instructor"
+        else:
+            first_role = roles[0] if roles else ""
+            user_role = first_role.split("#")[-1]
+        log_entry = LaunchLog(
+            launch_id=session["launch_id"],
+            canvas_course_id=session["course_id"],
+            canvas_course_name=context_claim.get("title"),
+            user_role=user_role,
+            launched_at=datetime.utcnow(),
+        )
+        db.session.add(log_entry)
+        db.session.commit()
 
         # Redirect to the quiz for your course
         return redirect(url_for("quiz", course_id=session["course_id"]))
