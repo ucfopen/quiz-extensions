@@ -319,7 +319,7 @@ function checkUpdate(update_job_url) {
 				clearInterval(update_interval_id);
 				update_div.find(".status-msg").attr("style", "color: #000;");
 
-				updateResultTable(data["status_msg"], data["quiz_list"], data["unchanged_list"]);
+				updateResultTable(data["status_msg"], data["quiz_list"], data["unchanged_list"], data["failure_list"]);
 
 				resetModal();
 				$("#results_button").show();
@@ -342,7 +342,7 @@ function checkUpdate(update_job_url) {
 		});
 }
 
-function updateResultTable(message, quiz_list, unchanged_quiz_list) {
+function updateResultTable(message, quiz_list, unchanged_quiz_list, failure_quiz_list) {
 	results_div.innerHTML = "<p>" + message + "</p>";
 	if (quiz_list.length > 0) {
 		results_div.innerHTML += "<h4>Updated</h4>"
@@ -371,6 +371,20 @@ function updateResultTable(message, quiz_list, unchanged_quiz_list) {
 		}
 		unchanged_table_html += "</tbody></table></div>";
 		results_div.innerHTML += unchanged_table_html;
+	}
+
+	if (failure_quiz_list.length > 0) {
+		results_div.innerHTML += "<h4>Failed Quizzes</h4>"
+		results_div.innerHTML += "<p style='text-align: left;'>Accommodations failed for the following quizzes. If these quizzes are using the 'New Quizzes' engine, then try the following fix:</p>"
+		results_div.innerHTML += "<p style='text-align: left;'>For each quiz:</p><ul style='text-align: left;'><li>Open the quiz's assignment page.</li><li>At the bottom of the page, press the blue <strong>Build</strong> button.</li><li>In the page that just opened, press the <strong>Return</strong> button at the top-left.</li></ul><p style='text-align: left;'>After completing these steps, please retry your extension request.</p>"
+		var failure_table_html = "<div id=\"table_div\"><table class=\"table table-striped table-condensed\"><thead><tr><th scope=\"col\">Quiz Title</th></tr></thead><tbody>";
+		for (var x in failure_quiz_list) {
+			failure_table_html += "<tr><td>" +
+				failure_quiz_list[x]["title"] +
+				"</td></tr>";
+		}
+		failure_table_html += "</tbody></table></div>";
+		results_div.innerHTML += failure_table_html;
 	}
 }
 
