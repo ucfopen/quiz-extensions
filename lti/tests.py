@@ -414,7 +414,9 @@ class ViewTests(flask_testing.TestCase):
         self.assertEqual(job_result["status"], "complete")
         self.assertEqual(
             job_result["status_msg"],
-            "Request complete. 1 quiz has been updated for 2 student(s) to have 200% time. 0 quizzes have no time limit and were left unchanged. There were 1 failed quiz accommodation(s).",
+            "Request complete. 1 quiz has been updated for 2 student(s) to have 200% time. "
+            "0 quizzes have no time limit and were left unchanged. "
+            "There were 1 failed quiz accommodation(s).",
         )
 
     def test_update_background_no_quizzes(self, m):
@@ -607,7 +609,9 @@ class ViewTests(flask_testing.TestCase):
         self.assertEqual(job_result["status"], "complete")
         self.assertEqual(
             job_result["status_msg"],
-            "Request complete. 1 quiz has been updated for 3 student(s) to have 200% time. 2 quizzes have no time limit and were left unchanged. There were 1 failed quiz accommodation(s).",
+            "Request complete. 1 quiz has been updated for 3 student(s) to have 200% time. "
+            "2 quizzes have no time limit and were left unchanged. "
+            "There were 1 failed quiz accommodation(s).",
         )
 
     def test_update_background_internal_error(self, m):
@@ -668,7 +672,9 @@ class ViewTests(flask_testing.TestCase):
                 self.app.config["TESTING_API_URL"]
             ),
             status_code=500,
-            json={"errors": [{"message": "There was an issue processing your request."}]},
+            json={
+                "errors": [{"message": "There was an issue processing your request."}]
+            },
         )
         m.register_uri(
             "POST",
@@ -718,7 +724,8 @@ class ViewTests(flask_testing.TestCase):
         self.assertTrue(job_result["error"])
         self.assertEqual(
             job_result["status_msg"],
-            "Error creating extension for Classic Quiz #4. Canvas status code: Encountered an error: status code 500",
+            "Error creating extension for Classic Quiz #4. "
+            "Canvas status code: Encountered an error: status code 500",
         )
 
     def test_update_background(self, m):
