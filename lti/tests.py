@@ -412,7 +412,6 @@ class ViewTests(flask_testing.TestCase):
         self.assertTrue(all(key in job_result for key in meta_keys))
 
         self.assertEqual(job_result["status"], "complete")
-        # self.assertTrue(job_result["error"])
         self.assertEqual(
             job_result["status_msg"],
             "Request complete. 1 quiz has been updated for 2 student(s) to have 200% time. 0 quizzes have no time limit and were left unchanged. There were 1 failed quiz accommodation(s).",
@@ -606,7 +605,6 @@ class ViewTests(flask_testing.TestCase):
         self.assertTrue(all(key in job_result for key in meta_keys))
 
         self.assertEqual(job_result["status"], "complete")
-        # self.assertTrue(job_result["error"])
         self.assertEqual(
             job_result["status_msg"],
             "Request complete. 1 quiz has been updated for 3 student(s) to have 200% time. 2 quizzes have no time limit and were left unchanged. There were 1 failed quiz accommodation(s).",
