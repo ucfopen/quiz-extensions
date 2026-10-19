@@ -9,6 +9,8 @@ on:
 
 env:
   REQUIREMENTS: requirements-test.txt
+  TARGET_BRANCH: ${{ github.event.workflow_run.head_branch }}
+  TARGET_SHA: ${{ github.event.workflow_run.head_sha }}
 
 jobs:
   build_and_upload_images:
@@ -21,18 +23,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.workflow_run.head_branch }}
+          ref: ${{ env.TARGET_BRANCH }}
 
       - name: Verify Branch
         run: |
-          echo "Currently running code from branch: ${{ github.event.workflow_run.head_branch }}"
-          echo "Commit SHA: ${{ github.event.workflow_run.head_sha }}"
+          echo "Currently running code from branch: ${{ env.TARGET_BRANCH }}"
+          echo "Commit SHA: ${{ env.TARGET_SHA }}"
 
       - name: Docker meta for Python
         id: meta_python
         uses: docker/metadata-action@v6
         with:
           images: ghcr.io/${{ github.repository_owner }}/quiz-extensions
+          context: git
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
