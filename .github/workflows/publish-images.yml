@@ -23,6 +23,11 @@ jobs:
         with:
           ref: ${{ github.event.workflow_run.head_branch }}
 
+      - name: Verify Branch
+        run: |
+          echo "Currently running code from branch: ${{ github.event.workflow_run.head_branch }}"
+          echo "Commit SHA: ${{ github.event.workflow_run.head_sha }}"
+
       - name: Docker meta for Python
         id: meta_python
         uses: docker/metadata-action@v6
