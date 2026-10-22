@@ -7,12 +7,6 @@ from logging.config import dictConfig
 from subprocess import call
 from urllib.parse import urlparse
 
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.common.exceptions import NoSuchElementException
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.support.ui import WebDriverWait
-
 import config
 import redis
 import requests
@@ -96,37 +90,6 @@ register_cli(app)
 
 # CanvasAPI requires /api/v1/ to be removed
 canvas = Canvas(config.API_URL, config.API_KEY)
-
-### SELENIUM UTILITIES
-
-# creates Selenium WebDriver, adds our API_KEY to its headers
-def setup_driver():
-    options = webdriver.ChromeOptions()
-    options.binary_location = "/usr/bin/chromium"
-    options.add_argument("--headless")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-
-    driver = webdriver.Chrome(
-        service=Service("/usr/bin/chromedriver"),
-        options=options,
-    )
-    driver.execute_cdp_cmd("Network.enable", {})
-    driver.execute_cdp_cmd("Network.setExtraHTTPHeaders", {
-        "headers": {"Authorization": f"Bearer {config.API_KEY}"}
-    })
-
-    return driver
-
-# wait for all requests to finish to make sure the quiz gets repaired
-def check_network_idle(driver):
-    script = """
-    return {
-        'pending': window.performance.getEntriesByType('resource')
-            .filter(r => !r.responseEnd).length
-    };
-    """
-    return driver.execute_script(script)['pending'] == 0
 
 
 ################################
@@ -608,9 +571,6 @@ def update_background(course_id, extension_dict):
     """
     job = get_current_job()
 
-    # initialize Selenium driver
-    driver = setup_driver()
-
     update_job(job, 0, "Starting...", "started")
 
     with app.app_context():
@@ -707,24 +667,6 @@ def update_background(course_id, extension_dict):
             )
             return job.meta
 
-        # gets New Quizzes tool for mocking launches
-        # this will allow us to repair broken new quizzes
-        nq_tool = None
-
-        try:
-            if not config.NQ_URL or not config.NQ_ID:
-                logger.warning(
-                    "Configuration for the New Quizzes tool is not set. Auto-repair will not activate."
-                )
-            else:
-                acc = canvas.get_account(account=course_obj.root_account_id)
-                nq_tool = acc.get_external_tool(config.NQ_ID)
-                nq_tool.course_id = course_obj.id
-        except CanvasException as e:
-            logger.error(
-                f"Error fetching the New Quizzes tool. Your Canvas installation may not support it. Error: {e.message}"
-            )
-
         for index, quiz in enumerate(all_quizzes):
             # Is true if the quiz is a New Quiz
             is_new = isinstance(quiz, NewQuiz)
@@ -752,39 +694,6 @@ def update_background(course_id, extension_dict):
             )
 
             extension_response = extend_quiz(quiz, is_new, percent, user_ids)
-            # if there is no New Quizzes tool then this branch is useless anyways
-            # if nq_tool and is_new and "Not Found" in extension_response.get("message", ""):
-            if nq_tool and is_new:
-                try:
-                    nq_launch_url = str(nq_tool.get_sessionless_launch_url(url=config.NQ_URL, assignment_id=quiz_id, launch_type="assessment"))
-                    # launch_res = requests.get(nq_launch_url, headers={"Authorization": f"Bearer {config.API_KEY}"})
-                    driver.get(nq_launch_url)
-                    try:
-                        WebDriverWait(driver, 10).until(lambda d: quiz_title in d.find_element(By.TAG_NAME, "body").text)
-                    except:
-                        logger.debug(
-                            f"Waited 10 seconds for New Quiz #{quiz_id}."   
-                        )
-
-                    # weird design pattern, but Selenium does not support checking status codes.
-                    # therefore we must cause an exception while looking for an error page,
-                    # and getting that exception means we are on a valid page
-                    try:
-                        driver.find_element(by=By.CSS_SELECTOR, value="pre")
-                        logger.error(
-                            f"Page returned an error during a New Quizzes repair launch for New Quiz #{quiz_id}."
-                        )
-                    except NoSuchElementException:
-                        logger.debug(f"Page title: {driver.title}")
-                        extension_response = extend_quiz(quiz, is_new, percent, user_ids)
-                except CanvasException as e:
-                    logger.exception(
-                        f"Failed to retrieve the New Quizzes launch URL for New Quiz #{quiz_id}. Error: {e.message}"
-                    )
-                except:
-                    logger.error(
-                        f"Failed to perform New Quizzes repair launch for New Quiz #{quiz_id}."
-                    )
 
             if extension_response.get("success", False) is True:
                 # add/update quiz
@@ -803,7 +712,7 @@ def update_background(course_id, extension_dict):
                     )
                 else:
                     unchanged_quiz_time_list.append({"title": quiz_title})
-            elif "Not Found" in extension_response.get("message", ""):
+            elif is_new and "Not Found" in extension_response.get("message", ""):
                 failure_quiz_time_list.append({"title": quiz_title})
             else:
                 update_job(
@@ -814,7 +723,6 @@ def update_background(course_id, extension_dict):
                     error=True,
                 )
                 logger.error("Extension failed: {}".format(extension_response))
-                driver.quit()
                 return job.meta
 
         msg_str = (
@@ -834,7 +742,6 @@ def update_background(course_id, extension_dict):
         if len(failure_quiz_time_list) > 0:
             message += f" There were {len(failure_quiz_time_list)} failed quiz accommodation(s)."
 
-        driver.quit()
         update_job(job, 100, message, "complete", error=False)
         job.meta["quiz_list"] = quiz_time_list
         job.meta["unchanged_list"] = unchanged_quiz_time_list
@@ -857,9 +764,6 @@ def refresh_background(course_id):
         - message `str` A long description of success or failure.
     """
     job = get_current_job()
-
-    # initialize Selenium driver
-    driver = setup_driver()
 
     update_job(job, 0, "Starting...", "started")
 
@@ -961,24 +865,6 @@ def refresh_background(course_id):
 
         failure_quiz_time_list = []
 
-        # gets New Quizzes tool for mocking launches
-        # this will allow us to repair broken new quizzes
-        nq_tool = None
-
-        try:
-            if not config.NQ_URL or not config.NQ_ID:
-                logger.warning(
-                    "Configuration for the New Quizzes tool is not set. Auto-repair will not activate."
-                )
-            else:
-                acc = canvas.get_account(account=course_obj.root_account_id)
-                nq_tool = acc.get_external_tool(config.NQ_ID)
-                nq_tool.course_id = course_obj.id
-        except CanvasException as e:
-            logger.error(
-                f"Error fetching the New Quizzes tool. Your Canvas installation may not support it. Error: {e.message}"
-            )
-
         for index, quiz in enumerate(quizzes):
             # Is true if the quiz is a New Quiz
             is_new = isinstance(quiz, NewQuiz)
@@ -998,39 +884,7 @@ def refresh_background(course_id):
 
             for percent, user_list in percent_user_map.items():
                 extension_response = extend_quiz(quiz, is_new, percent, user_list)
-                # if there is no New Quizzes tool then this branch is useless anyways
-                # if nq_tool and is_new and "Not Found" in extension_response.get("message", ""):
-                if nq_tool and is_new:
-                    try:
-                        nq_launch_url = str(nq_tool.get_sessionless_launch_url(url=config.NQ_URL, assignment_id=quiz_id, launch_type="assessment"))
-                        # launch_res = requests.get(nq_launch_url, headers={"Authorization": f"Bearer {config.API_KEY}"})
-                        driver.get(nq_launch_url)
-                        try:
-                            WebDriverWait(driver, 10).until(lambda d: quiz_title in d.find_element(By.TAG_NAME, "body").text)
-                        except:
-                            logger.debug(
-                                f"Waited 10 seconds for New Quiz #{quiz_id}."
-                            )
-                        # weird design pattern, but Selenium does not support checking status codes.
-                        # therefore we must cause an exception while looking for an error page,
-                        # and getting that exception means we are on a valid page
-                        try:
-                            driver.find_element(by=By.CSS_SELECTOR, value="pre")
-                            logger.error(
-                                f"Page returned an error during a New Quizzes repair launch for New Quiz #{quiz_id}."
-                            )
-                        except NoSuchElementException:
-                            logger.debug(f"Page title: {driver.title}")
-                            extension_response = extend_quiz(quiz, is_new, percent, user_list)
-                    except CanvasException as e:
-                        logger.exception(
-                            f"Failed to retrieve the New Quizzes launch URL for New Quiz #{quiz_id}. Error: {e.message}"
-                        )
-                    except:
-                        logger.error(
-                            f"Failed to perform New Quizzes repair launch for New Quiz #{quiz_id}."
-                        )
-
+               
                 if extension_response.get("success", False) is True:
                     # add/update quiz
                     quiz_obj, created = get_or_create(
@@ -1040,16 +894,14 @@ def refresh_background(course_id):
                     quiz_obj.time_limit = quiz.time_limit
 
                     db.session.commit()
-                elif "Not Found" in extension_response.get("message", ""):
+                elif is_new and "Not Found" in extension_response.get("message", ""):
                     failure_quiz_time_list.append({"title": quiz_title})
                 else:
                     error_message = "Some quizzes couldn't be updated. "
                     error_message += extension_response.get("message", "")
                     update_job(job, comp_perc, error_message, "failed", error=True)
-                    driver.quit()
                     return job.meta
                 
-        driver.quit()
         msg = "{} quizzes have been updated.".format(len(quizzes))
         job.meta["failure_list"] = failure_quiz_time_list
         update_job(job, 100, msg, "complete", error=False)
