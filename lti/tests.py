@@ -3,12 +3,13 @@ import logging
 import fakeredis
 import flask_testing
 import requests_mock
-import views
 from canvasapi import Canvas
 from flask import Flask, session
 from flask_caching import Cache
-from models import Course, Extension, Quiz, User, db
 from rq import Queue, SimpleWorker
+
+import views
+from models import Course, Extension, Quiz, User, db
 
 # Tests with the suffix "_new" are for testing New Quiz functionality specifically,
 # and are identical to their classic quiz counterparts otherwise.
@@ -1223,7 +1224,7 @@ class ViewTests(flask_testing.TestCase):
             "{}api/quiz/v1/courses/1/quizzes/3/accommodations".format(
                 self.app.config["TESTING_API_URL"]
             ),
-            status_code=404
+            status_code=404,
         )
 
         m.register_uri(
@@ -1268,9 +1269,7 @@ class ViewTests(flask_testing.TestCase):
         self.assertFalse(job_result["error"])
         self.assertEqual(
             job_result["status_msg"],
-            (
-                "2 quizzes have been updated."
-            ),
+            ("2 quizzes have been updated."),
         )
 
     def test_refresh_background_missing_user(self, m):
