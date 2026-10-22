@@ -48,11 +48,13 @@ cd quiz-extensions
 Logger requires a log directory to function.
 
 Create the directory
+
 ```sh
 mkdir ./lti/logs
 ```
 
 Then create the log file
+
 ```sh
 touch ./lti/logs/quiz_ext.log
 ```
@@ -156,7 +158,7 @@ Now click on the Admin tab of the ribbon and click the account name where you wo
 
 On the "Account" tab, click "+ Developer Key" and select "+ LTI Key". Change the key name, following the syntax: "{Your first name} - Quiz Extensions". Set the owner email to your work email.
 
-If installing an Instructure-hosted instance of this tool (or one that is otherwise publically accessible), select "Enter URL" and paste the full URL to the LTI Config page. (e.g. https://your-tool-domain/quiz-extensions/lticonfig)
+If installing an Instructure-hosted instance of this tool (or one that is otherwise publically accessible), select "Enter URL" and paste the full URL to the LTI Config page. (e.g. `https://your-tool-domain/quiz-extensions/lticonfig`)
 
 If installing a **self-hosted** instance of this tool, select "Paste JSON" in the method selection menu. Post the JSON from before (e.g. [https://use-your-unique-number-here.ngrok-free.app/quiz-extensions/lticonfig](https://ngrok.com) if running locally with ngrok) in the textbox that appears.
 
@@ -221,7 +223,8 @@ In order to run the current test suite, run the command:
 ```sh
 make test-all
 ```
-## Acknowledgements:
+
+## Acknowledgements
 
 - 1EdTech's [LTI 1.3 Specification](https://www.imsglobal.org/spec/lti/v1p3)
 - University of Central Florida's

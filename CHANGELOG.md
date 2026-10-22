@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### General
+
+- Allow partial success states: quizzes failing to update don't stop other quizzes from being attempted
+
 ## [6.0.0] - 2026-04-10
 
 ### General
