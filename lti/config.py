@@ -62,7 +62,6 @@ LOGGING_CONFIG = {
     },
     "loggers": {
         "app": {"handlers": ["console", "file"], "level": "DEBUG", "propagate": True},
-        # "canvasapi": {"handlers": ["console", "file"], "level": "DEBUG", "propagate": True}
     },
 }
 
