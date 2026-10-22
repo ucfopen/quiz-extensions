@@ -11,3 +11,4 @@ rq==2.7.0
 SQLAlchemy==2.0.49
 pycryptodome
 gunicorn==23.0.0
+selenium==4.51.0
