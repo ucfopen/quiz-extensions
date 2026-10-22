@@ -61,7 +61,8 @@ LOGGING_CONFIG = {
         },
     },
     "loggers": {
-        "app": {"handlers": ["console", "file"], "level": "DEBUG", "propagate": True}
+        "app": {"handlers": ["console", "file"], "level": "DEBUG", "propagate": True},
+        # "canvasapi": {"handlers": ["console", "file"], "level": "DEBUG", "propagate": True}
     },
 }
 
@@ -72,3 +73,8 @@ TESTING_API_KEY = os.environ.get("TESTING_API_KEY")
 # Chrome 80 SameSite=None; Secure fix
 SESSION_COOKIE_SECURE = int(os.environ.get("SESSION_COOKIE_SECURE", 1)) == 1
 SESSION_COOKIE_SAMESITE = os.environ.get("SESSION_COOKIE_SAMESITE")
+
+# New Quizzes-related information
+NQ_ID = int(os.environ.get("NQ_ID", -1))
+NQ_URL = os.environ.get("NQ_URL")
+ACCESS_TOKEN = os.environ.get("ACCESS_TOKEN", "")

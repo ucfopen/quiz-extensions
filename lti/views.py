@@ -666,6 +666,24 @@ def update_background(course_id, extension_dict):
             )
             return job.meta
 
+        # gets New Quizzes tool for mocking launches
+        # this will allow us to repair broken new quizzes
+        nq_tool = None
+
+        try:
+            if not config.NQ_URL or not config.NQ_ID:
+                logger.warning(
+                    "Configuration for the New Quizzes tool is not set. Auto-repair will not activate."
+                )
+            else:
+                acc = canvas.get_account(account=course_obj.root_account_id)
+                nq_tool = acc.get_external_tool(config.NQ_ID)
+                nq_tool.course_id = course_obj.id
+        except CanvasException as e:
+            logger.error(
+                f"Error fetching the New Quizzes tool. Your Canvas installation may not support it. Error: {e.message}"
+            )
+
         for index, quiz in enumerate(all_quizzes):
             # Is true if the quiz is a New Quiz
             is_new = isinstance(quiz, NewQuiz)
@@ -693,6 +711,26 @@ def update_background(course_id, extension_dict):
             )
 
             extension_response = extend_quiz(quiz, is_new, percent, user_ids)
+            # if there is no New Quizzes tool then this branch is useless anyways
+            if nq_tool and is_new and "Not Found" in extension_response.get("message", ""):
+                try:
+                    nq_launch_url = str(nq_tool.get_sessionless_launch_url(url=config.NQ_URL, assignment_id=quiz_id, launch_type="assessment"))
+                    launch_res = requests.get(nq_launch_url, headers={"Authorization": f"Bearer {config.API_KEY}"})
+                    if launch_res.status_code == 200:
+                        # retry extension request
+                        extension_response = extend_quiz(quiz, is_new, percent, user_ids)
+                    else:
+                        logger.error(
+                            f"Failed to perform New Quizzes repair launch for New Quiz #{quiz_id}."
+                        )
+                except CanvasException as e:
+                    logger.exception(
+                        f"Failed to retrieve the New Quizzes launch URL for New Quiz #{quiz_id}. Error: {e.message}"
+                    )
+                except:
+                    logger.error(
+                        f"Failed to perform New Quizzes repair launch for New Quiz #{quiz_id}."
+                    )
 
             if extension_response.get("success", False) is True:
                 # add/update quiz
@@ -862,6 +900,26 @@ def refresh_background(course_id):
             update_job(job, 100, msg_str, "complete", error=False)
             return job.meta
 
+        failure_quiz_time_list = []
+
+        # gets New Quizzes tool for mocking launches
+        # this will allow us to repair broken new quizzes
+        nq_tool = None
+
+        try:
+            if not config.NQ_URL or not config.NQ_ID:
+                logger.warning(
+                    "Configuration for the New Quizzes tool is not set. Auto-repair will not activate."
+                )
+            else:
+                acc = canvas.get_account(account=course_obj.root_account_id)
+                nq_tool = acc.get_external_tool(config.NQ_ID)
+                nq_tool.course_id = course_obj.id
+        except CanvasException as e:
+            logger.error(
+                f"Error fetching the New Quizzes tool. Your Canvas installation may not support it. Error: {e.message}"
+            )
+
         for index, quiz in enumerate(quizzes):
             # Is true if the quiz is a New Quiz
             is_new = isinstance(quiz, NewQuiz)
@@ -881,6 +939,26 @@ def refresh_background(course_id):
 
             for percent, user_list in percent_user_map.items():
                 extension_response = extend_quiz(quiz, is_new, percent, user_list)
+                # if there is no New Quizzes tool then this branch is useless anyways
+                if nq_tool and is_new and "Not Found" in extension_response.get("message", ""):
+                    try:
+                        nq_launch_url = str(nq_tool.get_sessionless_launch_url(url=config.NQ_URL, assignment_id=quiz_id, launch_type="assessment"))
+                        launch_res = requests.get(nq_launch_url, headers={"Authorization": f"Bearer {config.API_KEY}"})
+                        if launch_res.status_code == 200:
+                            # retry extension request
+                            extension_response = extend_quiz(quiz, is_new, percent, user_list)
+                        else:
+                            logger.error(
+                                f"Failed to perform New Quizzes repair launch for New Quiz #{quiz_id}."
+                            )
+                    except CanvasException as e:
+                        logger.exception(
+                            f"Failed to retrieve the New Quizzes launch URL for New Quiz #{quiz_id}. Error: {e.message}"
+                        )
+                    except:
+                        logger.error(
+                            f"Failed to perform New Quizzes repair launch for New Quiz #{quiz_id}."
+                        )
 
                 if extension_response.get("success", False) is True:
                     # add/update quiz
@@ -891,6 +969,8 @@ def refresh_background(course_id):
                     quiz_obj.time_limit = quiz.time_limit
 
                     db.session.commit()
+                elif "Not Found" in extension_response.get("message", ""):
+                    failure_quiz_time_list.append({"title": quiz_title})
                 else:
                     error_message = "Some quizzes couldn't be updated. "
                     error_message += extension_response.get("message", "")
@@ -898,6 +978,7 @@ def refresh_background(course_id):
                     return job.meta
 
         msg = "{} quizzes have been updated.".format(len(quizzes))
+        job.meta["failure_list"] = failure_quiz_time_list
         update_job(job, 100, msg, "complete", error=False)
         return job.meta
 
