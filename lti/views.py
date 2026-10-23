@@ -91,6 +91,7 @@ register_cli(app)
 # CanvasAPI requires /api/v1/ to be removed
 canvas = Canvas(config.API_URL, config.API_KEY)
 
+
 ################################
 # START LTI 1.3 IMPLEMENTATION #
 ################################
@@ -711,7 +712,7 @@ def update_background(course_id, extension_dict):
                     )
                 else:
                     unchanged_quiz_time_list.append({"title": quiz_title})
-            elif "Not Found" in extension_response.get("message", ""):
+            elif is_new and "Not Found" in extension_response.get("message", ""):
                 failure_quiz_time_list.append({"title": quiz_title})
             else:
                 update_job(
@@ -862,6 +863,8 @@ def refresh_background(course_id):
             update_job(job, 100, msg_str, "complete", error=False)
             return job.meta
 
+        failure_quiz_time_list = []
+
         for index, quiz in enumerate(quizzes):
             # Is true if the quiz is a New Quiz
             is_new = isinstance(quiz, NewQuiz)
@@ -891,6 +894,8 @@ def refresh_background(course_id):
                     quiz_obj.time_limit = quiz.time_limit
 
                     db.session.commit()
+                elif is_new and "Not Found" in extension_response.get("message", ""):
+                    failure_quiz_time_list.append({"title": quiz_title})
                 else:
                     error_message = "Some quizzes couldn't be updated. "
                     error_message += extension_response.get("message", "")
@@ -898,6 +903,7 @@ def refresh_background(course_id):
                     return job.meta
 
         msg = "{} quizzes have been updated.".format(len(quizzes))
+        job.meta["failure_list"] = failure_quiz_time_list
         update_job(job, 100, msg, "complete", error=False)
         return job.meta
 

@@ -411,12 +411,10 @@ class ViewTests(flask_testing.TestCase):
         meta_keys = ["status", "status_msg", "percent", "error"]
         self.assertTrue(all(key in job_result for key in meta_keys))
 
-        self.assertEqual(job_result["status"], "complete")
+        self.assertEqual(job_result["status"], "failed")
         self.assertEqual(
             job_result["status_msg"],
-            "Request complete. 1 quiz has been updated for 2 student(s) to have 200% time. "
-            "0 quizzes have no time limit and were left unchanged. "
-            "There were 1 failed quiz accommodation(s).",
+            "Error creating extension for Classic Quiz #4. Canvas status code: Not Found",
         )
 
     def test_update_background_no_quizzes(self, m):
@@ -606,12 +604,10 @@ class ViewTests(flask_testing.TestCase):
         meta_keys = ["status", "status_msg", "percent", "error"]
         self.assertTrue(all(key in job_result for key in meta_keys))
 
-        self.assertEqual(job_result["status"], "complete")
+        self.assertEqual(job_result["status"], "failed")
         self.assertEqual(
             job_result["status_msg"],
-            "Request complete. 1 quiz has been updated for 3 student(s) to have 200% time. "
-            "2 quizzes have no time limit and were left unchanged. "
-            "There were 1 failed quiz accommodation(s).",
+            "Error creating extension for Classic Quiz #4. Canvas status code: Not Found",
         )
 
     def test_update_background_internal_error(self, m):
@@ -1165,6 +1161,114 @@ class ViewTests(flask_testing.TestCase):
                 "Some quizzes couldn't be updated. Error creating extension "
                 "for Classic Quiz #1. Canvas status code: Not Found"
             ),
+        )
+
+    def test_refresh_background_update_new_not_found(self, m):
+        from views import refresh_background
+
+        with self.client.session_transaction() as sess:
+            sess["launch_id"] = 12345
+            sess["roles"] = [
+                "http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor"
+            ]
+
+        course_id = 1
+
+        m.register_uri(
+            "GET",
+            "{}api/v1/courses/{}".format(self.app.config["TESTING_API_URL"], course_id),
+            json={"id": course_id, "name": "Example Course"},
+        )
+        m.register_uri(
+            "GET",
+            "{}api/v1/courses/1/quizzes".format(self.app.config["TESTING_API_URL"]),
+            json=[{"id": 1, "title": "Quiz 1", "time_limit": 10}],
+        )
+        m.register_uri(
+            "POST",
+            "{}api/v1/courses/1/quizzes/1/extensions".format(
+                self.app.config["TESTING_API_URL"]
+            ),
+            status_code=200,
+            json={"quiz_extensions": []},
+        )
+        m.register_uri(
+            "GET",
+            "{}api/v1/courses/1/users/12345".format(self.app.config["TESTING_API_URL"]),
+            json={
+                "id": 12345,
+                "sortable_name": "John Smith",
+                "enrollments": [
+                    {"type": "StudentEnrollment", "enrollment_state": "active"}
+                ],
+            },
+        )
+        m.register_uri(
+            "GET",
+            "{}api/v1/users/12345/enrollments".format(
+                self.app.config["TESTING_API_URL"]
+            ),
+            json=[
+                {
+                    "id": 222,
+                    "user_id": 12345,
+                    "type": "StudentEnrollment",
+                    "enrollment_state": "active",
+                }
+            ],
+        )
+
+        m.register_uri(
+            "POST",
+            "{}api/quiz/v1/courses/1/quizzes/3/accommodations".format(
+                self.app.config["TESTING_API_URL"]
+            ),
+            status_code=404,
+        )
+
+        m.register_uri(
+            "GET",
+            "{}api/quiz/v1/courses/1/quizzes?per_page=100".format(
+                self.app.config["TESTING_API_URL"]
+            ),
+            json=[
+                {
+                    "id": 3,
+                    "title": "Quiz 3",
+                    "quiz_settings": {
+                        "session_time_limit_in_seconds": 600,
+                        "has_time_limit": True,
+                    },
+                }
+            ],
+        )
+
+        course = Course(course_id, course_name="Example Course")
+        views.db.session.add(course)
+
+        user = User(12345, sortable_name="John Smith")
+        views.db.session.add(user)
+
+        views.db.session.commit()
+
+        ext = Extension(course.id, user.id)
+        views.db.session.add(ext)
+        views.db.session.commit()
+
+        job = self.queue.enqueue_call(func=refresh_background, args=(course_id,))
+        self.worker.work(burst=True)
+
+        self.assertTrue(job.is_finished)
+        job_result = job.return_value()
+
+        meta_keys = ["status", "status_msg", "percent", "error"]
+        self.assertTrue(all(key in job_result for key in meta_keys))
+
+        self.assertEqual(job_result["status"], "complete")
+        self.assertFalse(job_result["error"])
+        self.assertEqual(
+            job_result["status_msg"],
+            ("2 quizzes have been updated."),
         )
 
     def test_refresh_background_missing_user(self, m):

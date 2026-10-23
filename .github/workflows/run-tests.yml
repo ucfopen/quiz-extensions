@@ -28,8 +28,6 @@ jobs:
         uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install XML dependencies
-        run: sudo apt-get install libxml2-dev libxmlsec1-dev
       - name: Install required packages
         run: |
           python -m pip install --upgrade pip
