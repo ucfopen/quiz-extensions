@@ -4,10 +4,11 @@ import logging
 import math
 from logging.config import dictConfig
 
-import config
 from canvasapi import Canvas
 from canvasapi.exceptions import CanvasException
 from canvasapi.new_quiz import NewQuiz
+
+import config
 from models import Quiz
 
 dictConfig(config.LOGGING_CONFIG)

@@ -6,6 +6,13 @@
 
 - Allow partial success states: quizzes failing to update don't stop other quizzes from being attempted
 
+### Backstage
+
+- Dropped support for Python 3.10
+- Added support for Python 3.15
+- Updated GitHub Actions dependencies
+- Updated image publishing workflow to include `develop` branch
+
 ## [6.0.0] - 2026-04-10
 
 ### General
