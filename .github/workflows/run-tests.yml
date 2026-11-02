@@ -44,6 +44,7 @@ jobs:
         uses: jamescurtin/isort-action@v1
         with:
           isort-version: "~9.0"
+          requirements-files: "requirements.txt requirements-test.txt"
       - name: Lint markdown files
         uses: bewuethr/mdl-action@v1
       - name: Run tests
