@@ -3,12 +3,13 @@ import logging
 import fakeredis
 import flask_testing
 import requests_mock
-import views
 from canvasapi import Canvas
 from flask import Flask, session
 from flask_caching import Cache
-from models import Course, Extension, Quiz, User, db
 from rq import Queue, SimpleWorker
+
+import views
+from models import Course, Extension, Quiz, User, db
 
 # Tests with the suffix "_new" are for testing New Quiz functionality specifically,
 # and are identical to their classic quiz counterparts otherwise.
@@ -180,46 +181,46 @@ class ViewTests(flask_testing.TestCase):
         self.assertEqual(len(list(self.get_context_variable("users"))), 4)
 
     def test_filter_query(self, m):
-            with self.client.session_transaction() as sess:
-                sess["launch_id"] = 12345
-                sess["roles"] = [
-                    "http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor"
-                ]
-    
-            m.register_uri(
-                "GET",
-                "{}api/v1/courses/1".format(self.app.config["TESTING_API_URL"]),
-                json={"id": 1, "title": "Example Course"},
-            )
-            m.register_uri(
-                "GET",
-                "{}api/v1/courses/1/search_users".format(
-                    self.app.config["TESTING_API_URL"]
-                ),
-                json=[
-                    {"id": 1, "name": "John Smith"},
-                    {"id": 2, "name": "Jane Doe"},
-                    {"id": 3, "name": "Jane Smyth"},
-                    {"id": 4, "name": "Jon Doe"},
-                ],
-                headers={
-                    "Link": f'<{self.app.config["TESTING_API_URL"]}'
-                    "courses/1/search_users?page=1&per_page=10>; "
-                    'rel="current",'
-                    f'<{self.app.config["TESTING_API_URL"]}'
-                    "courses/1/search_users?page=1&per_page=10>; "
-                    'rel="first",'
-                    f'<{self.app.config["TESTING_API_URL"]}'
-                    "courses/1/search_users?page=1&per_page=10>; "
-                    'rel="last",'
-                },
-            )
-    
-            course_id = 1
-            response = self.client.get(f"/filter/{course_id}/?query=")
-            self.assert_200(response)
-            self.assert_template_used("user_list.html")
-            self.assertEqual(len(list(self.get_context_variable("users"))), 4)
+        with self.client.session_transaction() as sess:
+            sess["launch_id"] = 12345
+            sess["roles"] = [
+                "http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor"
+            ]
+
+        m.register_uri(
+            "GET",
+            "{}api/v1/courses/1".format(self.app.config["TESTING_API_URL"]),
+            json={"id": 1, "title": "Example Course"},
+        )
+        m.register_uri(
+            "GET",
+            "{}api/v1/courses/1/search_users".format(
+                self.app.config["TESTING_API_URL"]
+            ),
+            json=[
+                {"id": 1, "name": "John Smith"},
+                {"id": 2, "name": "Jane Doe"},
+                {"id": 3, "name": "Jane Smyth"},
+                {"id": 4, "name": "Jon Doe"},
+            ],
+            headers={
+                "Link": f'<{self.app.config["TESTING_API_URL"]}'
+                "courses/1/search_users?page=1&per_page=10>; "
+                'rel="current",'
+                f'<{self.app.config["TESTING_API_URL"]}'
+                "courses/1/search_users?page=1&per_page=10>; "
+                'rel="first",'
+                f'<{self.app.config["TESTING_API_URL"]}'
+                "courses/1/search_users?page=1&per_page=10>; "
+                'rel="last",'
+            },
+        )
+
+        course_id = 1
+        response = self.client.get(f"/filter/{course_id}/?query=")
+        self.assert_200(response)
+        self.assert_template_used("user_list.html")
+        self.assertEqual(len(list(self.get_context_variable("users"))), 4)
 
     def test_quiz(self, m):
         with self.client.session_transaction() as sess:
