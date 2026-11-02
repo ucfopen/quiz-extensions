@@ -36,9 +36,9 @@ from rq.exceptions import NoSuchJobError
 from rq.job import Job
 from sqlalchemy.sql import text
 
-import config
-from cli import register_cli
-from models import (
+from lti import config
+from lti.cli import register_cli
+from lti.models import (
     Course,
     Extension,
     Quiz,
@@ -46,7 +46,7 @@ from models import (
     User,
     db,
 )
-from utils import (
+from lti.utils import (
     extend_quiz,
     get_or_create,
     missing_and_stale_quizzes,

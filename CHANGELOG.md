@@ -12,6 +12,7 @@
 - Added support for Python 3.15
 - Updated GitHub Actions dependencies
 - Updated image publishing workflow to include `develop` branch
+- Fixed improperly-configured imports
 
 ## [6.0.0] - 2026-04-10
 

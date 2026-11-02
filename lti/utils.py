@@ -8,8 +8,8 @@ from canvasapi import Canvas
 from canvasapi.exceptions import CanvasException
 from canvasapi.new_quiz import NewQuiz
 
-import config
-from models import Quiz
+from lti import config
+from lti.models import Quiz
 
 dictConfig(config.LOGGING_CONFIG)
 logger = logging.getLogger("app")

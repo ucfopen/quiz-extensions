@@ -8,8 +8,8 @@ from flask import Flask, session
 from flask_caching import Cache
 from rq import Queue, SimpleWorker
 
-import views
-from models import Course, Extension, Quiz, User, db
+from lti import views
+from lti.models import Course, Extension, Quiz, User, db
 
 # Tests with the suffix "_new" are for testing New Quiz functionality specifically,
 # and are identical to their classic quiz counterparts otherwise.
