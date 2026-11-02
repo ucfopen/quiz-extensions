@@ -741,7 +741,7 @@ def update_background(course_id, extension_dict):
 
         if len(failure_quiz_time_list) > 0:
             message += (
-                f'<br/><b>There were {len(failure_quiz_time_list)} failed quiz accommodation(s). '
+                f"<br/><b>There were {len(failure_quiz_time_list)} failed quiz accommodation(s). "
                 'Press "View Results" to see them.</b>'
             )
 
