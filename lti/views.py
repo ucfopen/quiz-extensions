@@ -740,7 +740,10 @@ def update_background(course_id, extension_dict):
         )
 
         if len(failure_quiz_time_list) > 0:
-            message += f'<br/><b>There were {len(failure_quiz_time_list)} failed quiz accommodation(s). Press "View Results" to see them.</b>'
+            message += (
+                f'<br/><b>There were {len(failure_quiz_time_list)} failed quiz accommodation(s). '
+                'Press "View Results" to see them.</b>'
+            )
 
         update_job(job, 100, message, "complete", error=False)
         job.meta["quiz_list"] = quiz_time_list
