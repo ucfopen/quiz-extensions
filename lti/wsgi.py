@@ -1,8 +1,7 @@
 import sys
 
+from views import app as application
 from virtualenv import activation
-
-from lti.views import app as application
 
 activate_this = f"{activation.python.__path__[0]}/activate_this.py"
 exec(open(activate_this).read(), dict(__file__=activate_this))

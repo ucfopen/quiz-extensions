@@ -3,13 +3,12 @@ import logging
 import fakeredis
 import flask_testing
 import requests_mock
+import views
 from canvasapi import Canvas
 from flask import Flask, session
 from flask_caching import Cache
+from models import Course, Extension, Quiz, User, db
 from rq import Queue, SimpleWorker
-
-from lti import views
-from lti.models import Course, Extension, Quiz, User, db
 
 # Tests with the suffix "_new" are for testing New Quiz functionality specifically,
 # and are identical to their classic quiz counterparts otherwise.

@@ -4,12 +4,11 @@ import logging
 import math
 from logging.config import dictConfig
 
+import config
 from canvasapi import Canvas
 from canvasapi.exceptions import CanvasException
 from canvasapi.new_quiz import NewQuiz
-
-from lti import config
-from lti.models import Quiz
+from models import Quiz
 
 dictConfig(config.LOGGING_CONFIG)
 logger = logging.getLogger("app")
