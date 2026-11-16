@@ -91,6 +91,7 @@ register_cli(app)
 # CanvasAPI requires /api/v1/ to be removed
 canvas = Canvas(config.API_URL, config.API_KEY)
 
+
 ################################
 # START LTI 1.3 IMPLEMENTATION #
 ################################
@@ -651,6 +652,7 @@ def update_background(course_id, extension_dict):
 
         quiz_time_list = []
         unchanged_quiz_time_list = []
+        failure_quiz_time_list = []
 
         if total_quizzes < 1:
             update_job(
@@ -710,6 +712,8 @@ def update_background(course_id, extension_dict):
                     )
                 else:
                     unchanged_quiz_time_list.append({"title": quiz_title})
+            elif is_new and "Not Found" in extension_response.get("message", ""):
+                failure_quiz_time_list.append({"title": quiz_title})
             else:
                 update_job(
                     job,
@@ -722,7 +726,7 @@ def update_background(course_id, extension_dict):
                 return job.meta
 
         msg_str = (
-            "Success! {} {} been updated for {} student(s) to have {}% time. "
+            "Request complete. {} {} been updated for {} student(s) to have {}% time. "
             "{} {} no time limit and were left unchanged."
         )
 
@@ -735,9 +739,16 @@ def update_background(course_id, extension_dict):
             "quizzes have" if len(unchanged_quiz_time_list) != 1 else "quiz has",
         )
 
+        if len(failure_quiz_time_list) > 0:
+            message += (
+                f"<br/><b>There were {len(failure_quiz_time_list)} failed quiz accommodation(s). "
+                'Press "View Results" to see them.</b>'
+            )
+
         update_job(job, 100, message, "complete", error=False)
         job.meta["quiz_list"] = quiz_time_list
         job.meta["unchanged_list"] = unchanged_quiz_time_list
+        job.meta["failure_list"] = failure_quiz_time_list
         job.save()
 
         return job.meta
@@ -855,6 +866,8 @@ def refresh_background(course_id):
             update_job(job, 100, msg_str, "complete", error=False)
             return job.meta
 
+        failure_quiz_time_list = []
+
         for index, quiz in enumerate(quizzes):
             # Is true if the quiz is a New Quiz
             is_new = isinstance(quiz, NewQuiz)
@@ -884,6 +897,8 @@ def refresh_background(course_id):
                     quiz_obj.time_limit = quiz.time_limit
 
                     db.session.commit()
+                elif is_new and "Not Found" in extension_response.get("message", ""):
+                    failure_quiz_time_list.append({"title": quiz_title})
                 else:
                     error_message = "Some quizzes couldn't be updated. "
                     error_message += extension_response.get("message", "")
@@ -891,6 +906,7 @@ def refresh_background(course_id):
                     return job.meta
 
         msg = "{} quizzes have been updated.".format(len(quizzes))
+        job.meta["failure_list"] = failure_quiz_time_list
         update_job(job, 100, msg, "complete", error=False)
         return job.meta
 

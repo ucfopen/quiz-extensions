@@ -61,7 +61,7 @@ LOGGING_CONFIG = {
         },
     },
     "loggers": {
-        "app": {"handlers": ["console", "file"], "level": "DEBUG", "propagate": True}
+        "app": {"handlers": ["console", "file"], "level": "DEBUG", "propagate": True},
     },
 }
 

@@ -1,6 +1,6 @@
 [tool.black]
 line-length = 88
-target_version = ['py310']
+target_version = ['py312']
 exclude = "migrations|src"
 
 [tool.isort]
