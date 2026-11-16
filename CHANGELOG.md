@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [6.1.0] - 2026-11-16
+
 ### General
 
 - Allow partial success states: quizzes failing to update don't stop other quizzes from being attempted
@@ -12,7 +14,6 @@
 - Added support for Python 3.15
 - Updated GitHub Actions dependencies
 - Updated image publishing workflow to include `develop` branch
-- Fixed improperly-configured imports
 
 ## [6.0.0] - 2026-04-10
 
@@ -118,7 +119,8 @@
 
 - Initial release
 
-[Unreleased]: https://github.com/ucfopen/quiz-extensions/compare/v6.0.0...master
+[Unreleased]: https://github.com/ucfopen/quiz-extensions/compare/v6.1.0...master
+[6.1.0]: https://github.com/ucfopen/quiz-extensions/compare/v6.0.0...v6.1.0
 [6.0.0]: https://github.com/ucfopen/quiz-extensions/compare/v5.0.0...v6.0.0
 [5.0.0]: https://github.com/ucfopen/quiz-extensions/compare/v4.0.0...v5.0.0
 [4.0.0]: https://github.com/ucfopen/quiz-extensions/compare/v3.1.1...v4.0.0
